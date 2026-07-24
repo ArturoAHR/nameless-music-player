@@ -11,7 +11,7 @@ use rtrb::Consumer;
 use tracing::{error, warn};
 
 use crate::playback::{
-    GenerationCounter,
+    controller::GenerationCounter,
     engine::{PlaybackEngineError, constants::OUTPUT_VOLUME_MULTIPLIER},
 };
 

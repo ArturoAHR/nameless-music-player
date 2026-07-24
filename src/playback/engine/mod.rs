@@ -16,7 +16,7 @@ use thiserror::Error;
 use tracing::instrument;
 
 use crate::playback::{
-    GenerationCounter,
+    controller::GenerationCounter,
     engine::thread::{AudioEngineStreamBuildArguments, build_output_stream},
 };
 

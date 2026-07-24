@@ -21,7 +21,8 @@ use crate::{
     error::AppError,
     library::scanner::scan_files_in_directory,
     playback::{
-        self, PlaybackController, PlaybackControllerStatus,
+        self,
+        controller::{PlaybackController, PlaybackControllerStatus},
         pipeline::thread::AudioPipelineThreadEvent,
     },
     subscriptions::{
@@ -106,7 +107,7 @@ pub enum Message {
     StatusBar(status_bar::Message),
     PlaybackBar(playback_bar::Message),
 
-    Playback(playback::Message),
+    PlaybackController(playback::controller::Message),
 }
 
 pub struct PaneSplitPositions {
@@ -299,7 +300,7 @@ impl App {
             }
             Message::StatusBar(event) => task = self.handle_status_bar(event),
             Message::PlaybackBar(event) => task = self.handle_playback_bar(event),
-            Message::Playback(event) => task = self.handle_playback(event),
+            Message::PlaybackController(event) => task = self.handle_playback(event),
         }
 
         task
@@ -374,7 +375,9 @@ impl App {
         ) {
             subscriptions.push(
                 every(milliseconds(CURRENT_PLAYBACK_POSITION_POLL_INTERVAL_MS)).map(|_| {
-                    Message::Playback(playback::Message::PollPlaybackCurrentPlaybackPosition)
+                    Message::PlaybackController(
+                        playback::controller::Message::PollPlaybackCurrentPlaybackPosition,
+                    )
                 }),
             );
         }

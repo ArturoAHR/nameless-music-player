@@ -1,6 +1,8 @@
 use std::{cell::RefCell, rc::Rc, sync::atomic::Ordering};
 
-use soundlore_lib::playback::{PlaybackController, pipeline::thread::AudioPipelineThreadEvent};
+use soundlore_lib::playback::{
+    controller::PlaybackController, pipeline::thread::AudioPipelineThreadEvent,
+};
 
 use crate::common::{
     log::initialize_logging,

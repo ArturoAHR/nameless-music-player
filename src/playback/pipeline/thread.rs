@@ -10,7 +10,7 @@ use tracing::{error, info, info_span, trace, warn};
 
 use crate::{
     playback::{
-        GenerationCounter,
+        controller::GenerationCounter,
         pipeline::{
             AudioFormat, AudioPipelineError, AudioPipelineStatus, builder::AudioPipelineBuilder,
             command::CommandReceiver, event::EventSender, stage::decoder::AudioDecoderError,

@@ -7,7 +7,7 @@ use rtrb::Producer;
 use thiserror::Error;
 use tracing::instrument;
 
-use crate::playback::{GenerationCounter, constants::SAMPLE_BUFFER_CAPACITY};
+use crate::playback::{constants::SAMPLE_BUFFER_CAPACITY, controller::GenerationCounter};
 
 #[derive(Debug, Error, Clone)]
 pub enum AudioSinkError {

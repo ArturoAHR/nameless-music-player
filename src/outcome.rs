@@ -4,7 +4,7 @@ use tracing::instrument;
 use crate::{
     app::{App, Message},
     error::AppError,
-    playback::PlaybackControllerStatus,
+    playback::controller::PlaybackControllerStatus,
     track::models::TrackId,
 };
 

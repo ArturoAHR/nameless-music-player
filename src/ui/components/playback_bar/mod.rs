@@ -9,7 +9,7 @@ use tracing::instrument;
 use crate::{
     event::Event,
     outcome::PlaybackOutcome,
-    playback::PlaybackControllerStatus,
+    playback::controller::PlaybackControllerStatus,
     track::{
         models::{Track, TrackId},
         utils::{get_track_duration_label, get_track_label},

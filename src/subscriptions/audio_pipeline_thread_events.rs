@@ -22,8 +22,8 @@ pub fn audio_pipeline_thread_events() -> impl Stream<Item = app::Message> {
 
         while let Some(event) = audio_pipeline_event_receiver.next().await {
             if let Err(error) = output
-                .send(app::Message::Playback(
-                    playback::Message::AudioPipelineEvent(event),
+                .send(app::Message::PlaybackController(
+                    playback::controller::Message::AudioPipelineEvent(event),
                 ))
                 .await
             {

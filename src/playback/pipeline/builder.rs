@@ -6,7 +6,7 @@ use tracing::warn;
 
 use crate::{
     playback::{
-        GenerationCounter,
+        controller::GenerationCounter,
         pipeline::{
             AudioFormat, AudioPipeline,
             command::{AudioPipelineCommandReceiver, CommandReceiver},

@@ -1,15 +1,12 @@
 use tracing::{error, instrument};
 
 use crate::playback::{
-    PlaybackController, PlaybackControllerError, PlaybackControllerStatus,
-    engine::PlaybackEngineStatus, pipeline::thread::AudioPipelineThreadEvent,
+    controller::{PlaybackController, PlaybackControllerError, PlaybackControllerStatus},
+    engine::PlaybackEngineStatus,
+    pipeline::thread::AudioPipelineThreadEvent,
 };
 
 impl PlaybackController {
-    /// Polls the audio pipeline event receiver
-    ///
-    /// # Errors
-    /// Returns an error if the pipeline event receiver fails its poll attempt
     #[instrument(skip(self), err)]
     pub fn handle_audio_pipeline_event(
         &mut self,

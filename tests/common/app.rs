@@ -4,7 +4,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use soundlore_lib::{
     app::{App, Message},
-    playback::{PlaybackController, pipeline::thread::AudioPipelineThreadEvent},
+    playback::{controller::PlaybackController, pipeline::thread::AudioPipelineThreadEvent},
     ui::theme::Theme,
 };
 use sqlx::SqlitePool;

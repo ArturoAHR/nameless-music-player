@@ -9,7 +9,7 @@ use std::{
 
 use rtrb::Consumer;
 use soundlore_lib::playback::{
-    GenerationCounter,
+    controller::GenerationCounter,
     engine::{PlaybackEngine, PlaybackEngineError, PlaybackEngineStatus},
 };
 

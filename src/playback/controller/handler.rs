@@ -6,7 +6,7 @@ use crate::{
     error::AppError,
     event::Event::AttemptedPlayingTrack,
     playback::{
-        PlaybackControllerError, PlaybackControllerStatus,
+        controller::{PlaybackControllerError, PlaybackControllerStatus},
         pipeline::thread::AudioPipelineThreadEvent,
     },
     track::models::TrackId,
@@ -98,12 +98,14 @@ impl App {
             }
             Message::PendingOutputDeviceChange => {
                 if let Err(error) = self.playback_controller.build_output() {
-                    return Task::done(app::Message::Playback(Message::OutputDeviceChangeFailed(
-                        error,
-                    )));
+                    return Task::done(app::Message::PlaybackController(
+                        Message::OutputDeviceChangeFailed(error),
+                    ));
                 }
 
-                Task::done(app::Message::Playback(Message::OutputDeviceChanged))
+                Task::done(app::Message::PlaybackController(
+                    Message::OutputDeviceChanged,
+                ))
             }
             Message::OutputDeviceChangeFailed(error) => {
                 error!("Failed to initialize playback output: {error}");

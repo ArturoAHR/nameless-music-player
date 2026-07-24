@@ -12,8 +12,8 @@ use tracing::{error, instrument, warn};
 
 use crate::{
     playback::{
-        GenerationCounter,
         constants::SAMPLE_BUFFER_CAPACITY,
+        controller::GenerationCounter,
         pipeline::{
             command::{AudioPipelineCommandReceiver, AudioPipelineCommandReceiverError},
             config::AudioPipelineConfiguration,
@@ -34,6 +34,7 @@ use crate::{
 pub mod builder;
 pub mod command;
 pub mod config;
+pub mod error;
 pub mod event;
 pub mod sink;
 pub mod stage;

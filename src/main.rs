@@ -7,7 +7,7 @@ use soundlore_lib::{
     app::App,
     database::initialize_database,
     log::initialize_logging,
-    playback::{PlaybackController, engine::AudioEngine},
+    playback::{controller::PlaybackController, engine::AudioEngine},
     ui::theme::Theme,
 };
 use tracing::{error, info};
