@@ -151,7 +151,7 @@ impl PlaybackQueueAlgorithm for PlaybackQueueRandomShuffleAlgorithm {
                 .track_pool
                 .iter()
                 .filter(|&track_id| {
-                    playback_queue
+                    !playback_queue
                         .queue_track_ids
                         .contains(&From::<TrackId>::from(*track_id))
                 })
