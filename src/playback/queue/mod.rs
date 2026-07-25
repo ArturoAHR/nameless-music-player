@@ -3,19 +3,26 @@ use thiserror::Error;
 use crate::{track::models::TrackId, traits::Identifiable, ui::widgets::table::TableRow};
 
 pub mod algorithm;
+pub mod handler;
 
-#[derive(Debug, Error)]
+pub use handler::Message;
+
+#[derive(Debug, Error, Clone)]
 pub enum PlaybackQueueError {
     #[error("Attempted to remove queued track beyond queue length")]
     InvalidQueueRemovePosition,
 }
 
+#[derive(Debug, Clone)]
 pub struct PlaybackQueue {
     /// Current position in the queue.
     cursor: usize,
 
     /// Contains the ids of the tracks that are in the queue.
     queue_track_ids: Vec<QueueTrackId>,
+
+    /// Contains the list of tracks from which the queue can pick from, it assumes the list is non-repeating.
+    track_pool: Vec<TrackId>,
 }
 
 impl PlaybackQueue {
@@ -23,12 +30,14 @@ impl PlaybackQueue {
         Self {
             cursor: 0,
             queue_track_ids: Vec::new(),
+            track_pool: Vec::new(),
         }
     }
 
-    pub fn start(&mut self, current_playing_track_id: Option<TrackId>) {
+    pub fn start(&mut self, track_pool: Vec<TrackId>, current_playing_track_id: Option<TrackId>) {
         self.cursor = 0;
         self.queue_track_ids.clear();
+        self.track_pool = track_pool;
 
         if let Some(current_playing_track_id) = current_playing_track_id {
             self.queue_track_ids
@@ -159,6 +168,10 @@ impl PlaybackQueue {
                 PlaybackQueueEntry::from_queue_track_id(index, queue_track_id)
             })
             .collect()
+    }
+
+    pub fn get_remaining_tracks(&self) -> usize {
+        self.queue_track_ids.len() - self.cursor
     }
 }
 

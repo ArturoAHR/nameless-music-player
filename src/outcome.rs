@@ -1,10 +1,22 @@
+use std::sync::Arc;
+
 use iced::Task;
+use tokio::sync::Mutex;
 use tracing::instrument;
 
 use crate::{
     app::{App, Message},
+    constants::PLAYBACK_QUEUE_LENGTH,
     error::AppError,
-    playback::controller::PlaybackControllerStatus,
+    event::Event,
+    playback::{
+        self,
+        controller::PlaybackControllerStatus,
+        queue::{
+            PlaybackQueueOrder,
+            algorithm::{PlaybackQueueRandomShuffleAlgorithm, PlaybackQueueSequentialAlgorithm},
+        },
+    },
     track::models::TrackId,
 };
 
@@ -19,10 +31,15 @@ pub enum PlaybackOutcome {
     Pause,
     Stop,
     Play(TrackId),
+    StartQueue(TrackId),
     Seek {
         timestamp: u64,
         post_seek_status: PlaybackControllerStatus,
     },
+    PlayNext,
+    PlayPrevious,
+    CycleRepeatMode,
+    CycleOrder,
 }
 
 impl App {
@@ -42,21 +59,17 @@ impl App {
         &mut self,
         outcome: PlaybackOutcome,
     ) -> Result<Task<Message>, AppError> {
+        let mut task = Task::none();
+
         match outcome {
             PlaybackOutcome::Resume => {
                 self.playback_controller.resume()?;
-
-                Ok(Task::none())
             }
             PlaybackOutcome::Stop => {
                 self.playback_controller.stop()?;
-
-                Ok(Task::none())
             }
             PlaybackOutcome::Pause => {
                 self.playback_controller.pause()?;
-
-                Ok(Task::none())
             }
             PlaybackOutcome::Seek {
                 post_seek_status,
@@ -68,11 +81,67 @@ impl App {
                     PlaybackControllerStatus::Playing => self.playback_controller.resume()?,
                     PlaybackControllerStatus::Stopped => self.playback_controller.pause()?,
                 }
-
-                Ok(Task::none())
             }
 
-            PlaybackOutcome::Play(track_id) => self.play_track(track_id),
+            PlaybackOutcome::Play(track_id) => task = self.play_track(track_id)?,
+            PlaybackOutcome::StartQueue(track_id) => {
+                task = self.play_track(track_id)?;
+
+                self.playback_queue
+                    .start(self.displayed_track_ids.clone(), Some(track_id));
+
+                task = task.chain(Task::done(Message::PlaybackQueue(
+                    playback::queue::Message::RegenerateNextTracks,
+                )));
+            }
+            PlaybackOutcome::PlayNext => {
+                let next_track_id = self.playback_queue.go_to_next();
+
+                if let Some(next_track_id) = next_track_id {
+                    task = self.play_track(next_track_id)?;
+                }
+
+                if self.playback_queue.get_remaining_tracks() <= PLAYBACK_QUEUE_LENGTH {
+                    task = task.chain(Task::done(Message::PlaybackQueue(
+                        playback::queue::Message::GenerateNextTracks,
+                    )));
+                } else {
+                    task = task.chain(self.broadcast(Event::QueueChanged));
+                }
+            }
+            PlaybackOutcome::PlayPrevious => {
+                let previous_track_id = self.playback_queue.go_to_previous();
+
+                if let Some(previous_track_id) = previous_track_id {
+                    task = self.play_track(previous_track_id)?;
+                }
+            }
+            PlaybackOutcome::CycleRepeatMode => {
+                self.playback_repeat_mode = self.playback_repeat_mode.next();
+            }
+            PlaybackOutcome::CycleOrder => {
+                self.playback_queue_order = self.playback_queue_order.next();
+
+                match self.playback_queue_order {
+                    PlaybackQueueOrder::Sequential => {
+                        let algorithm = PlaybackQueueSequentialAlgorithm::new(&self.playback_queue);
+
+                        self.playback_queue_algorithm = Arc::new(Mutex::new(Box::new(algorithm)));
+                    }
+
+                    PlaybackQueueOrder::Shuffle => {
+                        let algorithm = PlaybackQueueRandomShuffleAlgorithm::default();
+
+                        self.playback_queue_algorithm = Arc::new(Mutex::new(Box::new(algorithm)));
+                    }
+                }
+
+                task = Task::done(Message::PlaybackQueue(
+                    playback::queue::Message::RegenerateNextTracks,
+                ));
+            }
         }
+
+        Ok(task)
     }
 }

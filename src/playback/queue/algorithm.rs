@@ -10,12 +10,11 @@ use crate::{
 
 #[async_trait]
 pub trait PlaybackQueueAlgorithm {
-    fn initialize(&mut self, playback_queue: &PlaybackQueue, track_pool: Vec<TrackId>);
-    fn update_track_pool(&mut self, track_pool: Vec<TrackId>);
+    fn reset(&mut self, playback_queue: &PlaybackQueue);
 
     async fn generate_next_tracks(
         &mut self,
-        playback_queue: &PlaybackQueue,
+        playback_queue: PlaybackQueue,
         repeat_mode: PlaybackRepeatMode,
         amount: usize,
     ) -> Result<usize, PlaybackQueueError>;
@@ -26,16 +25,18 @@ pub trait PlaybackQueueAlgorithm {
 #[derive(Default)]
 pub struct PlaybackQueueSequentialAlgorithm {
     next_track_ids: Vec<TrackId>,
-    track_pool: Vec<TrackId>,
     cursor: usize,
 }
 
-#[async_trait]
-impl PlaybackQueueAlgorithm for PlaybackQueueSequentialAlgorithm {
-    fn initialize(&mut self, playback_queue: &PlaybackQueue, track_pool: Vec<TrackId>) {
-        self.next_track_ids.clear();
-        self.track_pool = track_pool;
+impl PlaybackQueueSequentialAlgorithm {
+    pub fn new(playback_queue: &PlaybackQueue) -> Self {
+        Self {
+            next_track_ids: Vec::new(),
+            cursor: Self::get_cursor_position(playback_queue),
+        }
+    }
 
+    pub fn get_cursor_position(playback_queue: &PlaybackQueue) -> usize {
         let mut queue_system_track_ids = playback_queue
             .queue_track_ids
             .iter()
@@ -46,12 +47,12 @@ impl PlaybackQueueAlgorithm for PlaybackQueueSequentialAlgorithm {
             .map(|(_, queue_track_id)| *queue_track_id.id())
             .rev();
 
-        self.cursor = loop {
+        loop {
             let Some(queue_system_track_id) = queue_system_track_ids.next() else {
                 break 0;
             };
 
-            let Some(position) = self
+            let Some(position) = playback_queue
                 .track_pool
                 .iter()
                 .position(|&track_id| track_id == queue_system_track_id)
@@ -60,23 +61,27 @@ impl PlaybackQueueAlgorithm for PlaybackQueueSequentialAlgorithm {
             };
 
             break position + 1;
-        };
+        }
     }
+}
 
-    fn update_track_pool(&mut self, track_pool: Vec<TrackId>) {
-        self.track_pool = track_pool;
+#[async_trait]
+impl PlaybackQueueAlgorithm for PlaybackQueueSequentialAlgorithm {
+    fn reset(&mut self, playback_queue: &PlaybackQueue) {
+        self.next_track_ids.clear();
+        self.cursor = Self::get_cursor_position(playback_queue);
     }
 
     async fn generate_next_tracks(
         &mut self,
-        _playback_queue: &PlaybackQueue,
+        playback_queue: PlaybackQueue,
         repeat_mode: PlaybackRepeatMode,
         amount: usize,
     ) -> Result<usize, PlaybackQueueError> {
         let track_pool = if repeat_mode.is_repeating() {
-            Either::Left(self.track_pool.iter().cycle())
+            Either::Left(playback_queue.track_pool.iter().cycle())
         } else {
-            Either::Right(self.track_pool.iter())
+            Either::Right(playback_queue.track_pool.iter())
         };
 
         let next_track_ids: Vec<TrackId> =
@@ -85,7 +90,7 @@ impl PlaybackQueueAlgorithm for PlaybackQueueSequentialAlgorithm {
         self.cursor += next_track_ids.len();
 
         if repeat_mode.is_repeating() {
-            self.cursor %= self.track_pool.len();
+            self.cursor %= playback_queue.track_pool.len();
         }
 
         self.next_track_ids.extend(&next_track_ids);
@@ -118,35 +123,32 @@ impl PlaybackQueueAlgorithm for PlaybackQueueSequentialAlgorithm {
     }
 }
 
+#[derive(Debug, Default)]
 pub struct PlaybackQueueRandomShuffleAlgorithm {
     next_track_ids: Vec<TrackId>,
-    track_pool: Vec<TrackId>,
 }
 
 #[async_trait]
 impl PlaybackQueueAlgorithm for PlaybackQueueRandomShuffleAlgorithm {
-    fn initialize(&mut self, _playback_queue: &PlaybackQueue, track_pool: Vec<TrackId>) {
+    fn reset(&mut self, _playback_queue: &PlaybackQueue) {
         self.next_track_ids.clear();
-        self.track_pool = track_pool;
-    }
-
-    fn update_track_pool(&mut self, track_pool: Vec<TrackId>) {
-        self.track_pool = track_pool;
     }
 
     async fn generate_next_tracks(
         &mut self,
-        playback_queue: &PlaybackQueue,
+        playback_queue: PlaybackQueue,
         repeat_mode: PlaybackRepeatMode,
         amount: usize,
     ) -> Result<usize, PlaybackQueueError> {
         let next_track_ids: Vec<TrackId> = if repeat_mode.is_repeating() {
-            self.track_pool
+            playback_queue
+                .track_pool
                 .sample(&mut rand::rng(), amount)
                 .copied()
                 .collect()
         } else {
-            self.track_pool
+            playback_queue
+                .track_pool
                 .iter()
                 .filter(|&track_id| {
                     playback_queue

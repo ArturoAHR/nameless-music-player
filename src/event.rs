@@ -12,6 +12,7 @@ pub enum Event {
     StartedPlayback,
     StoppedPlayback,
     EndOfTrack,
+    QueueChanged,
 }
 
 impl App {

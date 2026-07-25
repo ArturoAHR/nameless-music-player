@@ -18,6 +18,8 @@ impl App {
                 &self.theme,
                 &self.tracks,
                 self.current_playing_track_id.as_ref(),
+                self.playback_repeat_mode,
+                self.playback_queue_order,
             )
             .map(app::Message::PlaybackBar)
     }

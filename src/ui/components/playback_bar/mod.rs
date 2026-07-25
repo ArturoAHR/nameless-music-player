@@ -9,7 +9,10 @@ use tracing::instrument;
 use crate::{
     event::Event,
     outcome::PlaybackOutcome,
-    playback::controller::PlaybackControllerStatus,
+    playback::{
+        controller::PlaybackControllerStatus,
+        queue::{PlaybackQueueOrder, PlaybackRepeatMode},
+    },
     track::{
         models::{Track, TrackId},
         utils::{get_track_duration_label, get_track_label},
@@ -35,9 +38,6 @@ pub struct PlaybackBar {
     // TODO: These values must live in the app state, declaring them here for mocking UI.
     volume_percentage: u8,
     muted: bool,
-
-    repeat_mode: PlaybackRepeatMode,
-    queue_order: PlaybackQueueOrder,
 }
 
 #[derive(Debug)]
@@ -46,44 +46,12 @@ pub enum PlaybackBarStatus {
     Paused,
 }
 
-#[derive(Debug)]
-pub enum PlaybackRepeatMode {
-    NoRepeat,
-    RepeatAll,
-    RepeatOne,
-}
-
-impl PlaybackRepeatMode {
-    #[must_use]
-    pub fn next(&self) -> Self {
-        match self {
-            Self::NoRepeat => Self::RepeatAll,
-            Self::RepeatAll => Self::RepeatOne,
-            Self::RepeatOne => Self::NoRepeat,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum PlaybackQueueOrder {
-    Sequential,
-    Shuffle,
-}
-
-impl PlaybackQueueOrder {
-    #[must_use]
-    pub fn next(&self) -> Self {
-        match self {
-            Self::Sequential => Self::Shuffle,
-            Self::Shuffle => Self::Sequential,
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub enum Message {
     Pause,
     Resume,
+    PlayNext,
+    PlayPrevious,
     Scrubbed(f64),
     Seeked,
     PlaybackProgressed(f64),
@@ -123,9 +91,6 @@ impl PlaybackBar {
 
             muted: false,
             volume_percentage: 100,
-
-            repeat_mode: PlaybackRepeatMode::NoRepeat,
-            queue_order: PlaybackQueueOrder::Sequential,
         }
     }
 
@@ -160,21 +125,26 @@ impl PlaybackBar {
                     PlaybackBarStatus::Paused => PlaybackControllerStatus::Stopped,
                 };
 
-                outcomes = vec![Outcome::Playback(PlaybackOutcome::Seek {
+                outcomes.push(Outcome::Playback(PlaybackOutcome::Seek {
                     timestamp: self.current_position.round() as u64,
                     post_seek_status: pre_seek_status,
-                })];
+                }));
             }
             Message::Resume => {
                 self.status = PlaybackBarStatus::Playing;
 
-                outcomes = vec![Outcome::Playback(PlaybackOutcome::Resume)];
+                outcomes.push(Outcome::Playback(PlaybackOutcome::Resume));
             }
             Message::Pause => {
                 self.status = PlaybackBarStatus::Paused;
 
-                outcomes = vec![Outcome::Playback(PlaybackOutcome::Pause)];
+                outcomes.push(Outcome::Playback(PlaybackOutcome::Pause));
             }
+            Message::PlayNext => outcomes.push(Outcome::Playback(PlaybackOutcome::PlayNext)),
+            Message::PlayPrevious => {
+                outcomes.push(Outcome::Playback(PlaybackOutcome::PlayPrevious));
+            }
+
             // TODO: Add playback outcome to change volume
             Message::ChangeVolumePercentage(volume_percentage) => {
                 self.volume_percentage = volume_percentage;
@@ -185,10 +155,10 @@ impl PlaybackBar {
             }
             // TODO: Wire these two changes in upper for queue functionality
             Message::CycleRepeatMode => {
-                self.repeat_mode = self.repeat_mode.next();
+                outcomes.push(Outcome::Playback(PlaybackOutcome::CycleRepeatMode));
             }
             Message::CycleQueueOrder => {
-                self.queue_order = self.queue_order.next();
+                outcomes.push(Outcome::Playback(PlaybackOutcome::CycleOrder));
             }
         }
 
@@ -218,6 +188,8 @@ impl PlaybackBar {
         _theme: &Theme,
         tracks: &FxHashMap<TrackId, Track>,
         current_playing_track_id: Option<&TrackId>,
+        playback_repeat_mode: PlaybackRepeatMode,
+        playback_queue_order: PlaybackQueueOrder,
     ) -> Element<'a, Message, Theme, Renderer> {
         let mut total_frames = 1.0;
         let mut current_position = 0.0;
@@ -241,8 +213,8 @@ impl PlaybackBar {
                 },
             );
 
-        let play_previous = button(icon(icons::PLAY_PREVIOUS));
-        let play_next = button(icon(icons::PLAY_NEXT));
+        let play_previous = button(icon(icons::PLAY_PREVIOUS)).on_press(Message::PlayPrevious);
+        let play_next = button(icon(icons::PLAY_NEXT)).on_press(Message::PlayNext);
         let play_button = match self.status {
             PlaybackBarStatus::Paused => button(icon(icons::PLAY)).on_press(Message::Resume),
             PlaybackBarStatus::Playing => button(icon(icons::PAUSE)).on_press(Message::Pause),
@@ -251,13 +223,13 @@ impl PlaybackBar {
         let current_time_label =
             format!("{current_position_timestamp} / {track_duration_timestamp}");
 
-        let repeat_mode_icon = match self.repeat_mode {
+        let repeat_mode_icon = match playback_repeat_mode {
             PlaybackRepeatMode::NoRepeat => 'N', //Placeholder
-            PlaybackRepeatMode::RepeatAll => icons::LOOP_TRACKLIST,
+            PlaybackRepeatMode::Repeat => icons::LOOP_TRACKLIST,
             PlaybackRepeatMode::RepeatOne => '1', //Placeholder
         };
 
-        let queue_order_icon = match self.queue_order {
+        let queue_order_icon = match playback_queue_order {
             PlaybackQueueOrder::Sequential => icons::NO_SHUFFLE,
             PlaybackQueueOrder::Shuffle => icons::SHUFFLE,
         };

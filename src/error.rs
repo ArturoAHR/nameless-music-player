@@ -6,7 +6,10 @@ use thiserror::Error;
 use tokio::task::JoinError;
 
 use crate::{
-    playback::{controller::PlaybackControllerError, pipeline::AudioPipelineError},
+    playback::{
+        controller::PlaybackControllerError, pipeline::AudioPipelineError,
+        queue::PlaybackQueueError,
+    },
     track::file::TrackPropertiesReadError,
 };
 
@@ -49,6 +52,9 @@ pub enum AppError {
 
     #[error("playback controller error - {0}")]
     PlaybackController(#[from] PlaybackControllerError),
+
+    #[error("playback queue error - {0}")]
+    PlaybackQueue(#[from] PlaybackQueueError),
 }
 
 impl From<sqlx::Error> for AppError {

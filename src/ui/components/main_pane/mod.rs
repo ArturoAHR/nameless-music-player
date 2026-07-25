@@ -70,7 +70,7 @@ impl MainPane {
                 self.displayed_track_ids = displayed_track_ids;
             }
             Message::TrackRowDoubleClicked(track_id) => {
-                outcomes.push(Outcome::Playback(PlaybackOutcome::Play(track_id)));
+                outcomes.push(Outcome::Playback(PlaybackOutcome::StartQueue(track_id)));
             }
             Message::TrackRowSelected(selected_track_ids) => {
                 self.selected_track_ids = selected_track_ids.into_iter().collect();
