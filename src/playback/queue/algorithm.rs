@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use itertools::Either;
-use rand::seq::IteratorRandom;
+use rand::seq::{IteratorRandom, SliceRandom};
+use rustc_hash::FxHashSet;
 
 use crate::{
     playback::queue::{PlaybackQueue, PlaybackQueueError, PlaybackRepeatMode, QueueTrackId},
@@ -140,16 +141,19 @@ impl PlaybackQueueAlgorithm for PlaybackQueueRandomShuffleAlgorithm {
         repeat_mode: PlaybackRepeatMode,
         amount: usize,
     ) -> Result<usize, PlaybackQueueError> {
-        let next_track_ids: Vec<TrackId> = if repeat_mode.is_repeating() {
-            let recently_played_tracks: Vec<TrackId> = if let Some(queue_skip) = playback_queue
-                .cursor
-                .checked_sub(playback_queue.track_pool.len() / 2)
+        let mut rng = rand::rng();
+
+        let mut next_track_ids: Vec<TrackId> = if repeat_mode.is_repeating() {
+            let recently_played_tracks: FxHashSet<TrackId> = if let Some(queue_skip) =
+                playback_queue
+                    .queue_track_ids
+                    .len()
+                    .checked_sub(playback_queue.track_pool.len() / 2)
             {
                 playback_queue
                     .queue_track_ids
                     .iter()
                     .skip(queue_skip)
-                    .take(playback_queue.track_pool.len() / 2)
                     .map(Identifiable::id)
                     .copied()
                     .collect()
@@ -167,9 +171,9 @@ impl PlaybackQueueAlgorithm for PlaybackQueueRandomShuffleAlgorithm {
                 .iter()
                 .filter(|&track_id| !recently_played_tracks.contains(track_id))
                 .copied()
-                .sample(&mut rand::rng(), amount)
+                .sample(&mut rng, amount)
         } else {
-            let already_played_track_ids: Vec<TrackId> = playback_queue
+            let already_played_track_ids: FxHashSet<TrackId> = playback_queue
                 .queue_track_ids
                 .iter()
                 .map(Identifiable::id)
@@ -180,11 +184,13 @@ impl PlaybackQueueAlgorithm for PlaybackQueueRandomShuffleAlgorithm {
                 .track_pool
                 .iter()
                 .filter(|&track_id| !already_played_track_ids.contains(track_id))
-                .sample(&mut rand::rng(), amount)
+                .sample(&mut rng, amount)
                 .into_iter()
                 .copied()
                 .collect()
         };
+
+        next_track_ids.shuffle(&mut rng);
 
         self.next_track_ids.extend(&next_track_ids);
 
