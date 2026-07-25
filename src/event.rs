@@ -2,6 +2,7 @@ use iced::Task;
 
 use crate::{
     app::{App, Message},
+    constants::PLAYBACK_QUEUE_LENGTH,
     playback::queue::PlaybackQueueEntry,
     track::models::Track,
 };
@@ -28,5 +29,11 @@ impl App {
             self.notify_status_bar(&event),
             self.notify_track_information_pane(&event),
         ])
+    }
+
+    pub fn broadcast_queue_changed(&mut self) -> Task<Message> {
+        self.broadcast(Event::QueueChanged(
+            self.playback_queue.get_queue_entries(PLAYBACK_QUEUE_LENGTH),
+        ))
     }
 }

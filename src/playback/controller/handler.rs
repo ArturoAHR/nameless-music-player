@@ -4,7 +4,7 @@ use tracing::{error, instrument};
 use crate::{
     app::{self, App},
     error::AppError,
-    event::Event::AttemptedPlayingTrack,
+    event::Event,
     playback::{
         controller::{PlaybackControllerError, PlaybackControllerStatus},
         pipeline::thread::AudioPipelineThreadEvent,
@@ -25,6 +25,8 @@ pub enum Message {
 impl App {
     #[instrument(skip(self))]
     pub fn handle_playback_controller(&mut self, message: Message) -> Task<app::Message> {
+        let mut task = Task::none();
+
         match message {
             Message::AudioPipelineEvent(event) => {
                 if let Err(error) = self.playback_controller.handle_audio_pipeline_event(&event) {
@@ -38,6 +40,8 @@ impl App {
                             return Task::none();
                         };
 
+                        task = self.broadcast_queue_changed();
+
                         match self.play_track(next_track_id) {
                             Ok(event_tasks) => return event_tasks,
                             Err(error) => {
@@ -47,8 +51,6 @@ impl App {
                     }
                     _ => {}
                 }
-
-                Task::none()
             }
             Message::PollPlaybackCurrentPlaybackPosition => {
                 if matches!(
@@ -83,9 +85,9 @@ impl App {
                     * (track.sample_rate as f64 / f64::from(output_format.sample_rate))
                     / f64::from(output_format.channels);
 
-                Task::done(app::Message::PlaybackBar(
+                task = Task::done(app::Message::PlaybackBar(
                     playback_bar::Message::PlaybackProgressed(current_position),
-                ))
+                ));
             }
             Message::PendingOutputDeviceChange => {
                 if let Err(error) = self.playback_controller.build_output() {
@@ -94,19 +96,19 @@ impl App {
                     ));
                 }
 
-                Task::done(app::Message::PlaybackController(
+                task = Task::done(app::Message::PlaybackController(
                     Message::OutputDeviceChanged,
-                ))
+                ));
             }
             Message::OutputDeviceChangeFailed(error) => {
                 error!("Failed to initialize playback output: {error}");
 
                 // TODO: Display error popup with user friendly message.
-
-                Task::none()
             }
-            Message::OutputDeviceChanged => Task::none(),
+            Message::OutputDeviceChanged => {}
         }
+
+        task
     }
 
     #[instrument(skip(self))]
@@ -120,7 +122,7 @@ impl App {
             })?
             .clone();
 
-        let event_tasks = self.broadcast(AttemptedPlayingTrack);
+        let event_tasks = self.broadcast(Event::AttemptedPlayingTrack);
 
         self.playback_controller.play(track)?;
 

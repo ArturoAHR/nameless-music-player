@@ -8,7 +8,6 @@ use crate::{
     app::{App, Message},
     constants::PLAYBACK_QUEUE_LENGTH,
     error::AppError,
-    event::Event,
     playback::{
         self,
         controller::PlaybackControllerStatus,
@@ -106,9 +105,7 @@ impl App {
                         playback::queue::Message::GenerateNextTracks,
                     )));
                 } else {
-                    task = task.chain(self.broadcast(Event::QueueChanged(
-                        self.playback_queue.get_queue_entries(PLAYBACK_QUEUE_LENGTH),
-                    )));
+                    task = task.chain(self.broadcast_queue_changed());
                 }
             }
             PlaybackOutcome::PlayPrevious => {

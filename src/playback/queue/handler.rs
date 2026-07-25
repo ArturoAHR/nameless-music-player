@@ -7,7 +7,6 @@ use crate::{
     app::{self, App},
     constants::PLAYBACK_QUEUE_LENGTH,
     error::AppError,
-    event::Event::{self, QueueChanged},
     playback::queue::PlaybackQueueError,
     track::models::TrackId,
 };
@@ -92,9 +91,7 @@ impl App {
 
                 self.playback_queue.extend(next_track_ids);
 
-                task = self.broadcast(QueueChanged(
-                    self.playback_queue.get_queue_entries(PLAYBACK_QUEUE_LENGTH),
-                ));
+                task = self.broadcast_queue_changed();
             }
             Message::FinishedGeneratingNextTracks(Err(error)) => {
                 error!("Failed to generate next queue tracks: {error} ");
@@ -119,9 +116,7 @@ impl App {
                 Message::GenerateNextTracks,
             )));
         } else {
-            task = task.chain(self.broadcast(Event::QueueChanged(
-                self.playback_queue.get_queue_entries(PLAYBACK_QUEUE_LENGTH),
-            )));
+            task = task.chain(self.broadcast_queue_changed());
         }
 
         Ok(task)
