@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use itertools::Either;
-use rand::seq::{IndexedRandom, IteratorRandom};
+use rand::seq::IteratorRandom;
 
 use crate::{
     playback::queue::{PlaybackQueue, PlaybackQueueError, PlaybackRepeatMode, QueueTrackId},
@@ -141,20 +141,45 @@ impl PlaybackQueueAlgorithm for PlaybackQueueRandomShuffleAlgorithm {
         amount: usize,
     ) -> Result<usize, PlaybackQueueError> {
         let next_track_ids: Vec<TrackId> = if repeat_mode.is_repeating() {
-            playback_queue
-                .track_pool
-                .sample(&mut rand::rng(), amount)
-                .copied()
-                .collect()
-        } else {
+            let recently_played_tracks: Vec<TrackId> = if let Some(queue_skip) = playback_queue
+                .cursor
+                .checked_sub(playback_queue.track_pool.len() / 2)
+            {
+                playback_queue
+                    .queue_track_ids
+                    .iter()
+                    .skip(queue_skip)
+                    .take(playback_queue.track_pool.len() / 2)
+                    .map(Identifiable::id)
+                    .copied()
+                    .collect()
+            } else {
+                playback_queue
+                    .queue_track_ids
+                    .iter()
+                    .map(Identifiable::id)
+                    .copied()
+                    .collect()
+            };
+
             playback_queue
                 .track_pool
                 .iter()
-                .filter(|&track_id| {
-                    !playback_queue
-                        .queue_track_ids
-                        .contains(&From::<TrackId>::from(*track_id))
-                })
+                .filter(|&track_id| !recently_played_tracks.contains(track_id))
+                .copied()
+                .sample(&mut rand::rng(), amount)
+        } else {
+            let already_played_track_ids: Vec<TrackId> = playback_queue
+                .queue_track_ids
+                .iter()
+                .map(Identifiable::id)
+                .copied()
+                .collect();
+
+            playback_queue
+                .track_pool
+                .iter()
+                .filter(|&track_id| !already_played_track_ids.contains(track_id))
                 .sample(&mut rand::rng(), amount)
                 .into_iter()
                 .copied()
