@@ -94,7 +94,7 @@ impl App {
                 )));
             }
             PlaybackOutcome::PlayNext => {
-                let next_track_id = self.playback_queue.go_to_next();
+                let next_track_id = self.playback_queue.go_to_next(self.playback_repeat_mode);
 
                 if let Some(next_track_id) = next_track_id {
                     task = self.play_track(next_track_id)?;
@@ -109,14 +109,24 @@ impl App {
                 }
             }
             PlaybackOutcome::PlayPrevious => {
-                let previous_track_id = self.playback_queue.go_to_previous();
+                let previous_track_id = self
+                    .playback_queue
+                    .go_to_previous(self.playback_repeat_mode);
 
                 if let Some(previous_track_id) = previous_track_id {
                     task = self.play_track(previous_track_id)?;
                 }
             }
             PlaybackOutcome::CycleRepeatMode => {
-                self.playback_repeat_mode = self.playback_repeat_mode.next();
+                let next_repeat_mode = self.playback_repeat_mode.next();
+
+                if self.playback_repeat_mode.is_repeating() != next_repeat_mode.is_repeating() {
+                    task = task.chain(Task::done(Message::PlaybackQueue(
+                        playback::queue::Message::RegenerateNextTracks,
+                    )));
+                }
+
+                self.playback_repeat_mode = next_repeat_mode;
             }
             PlaybackOutcome::CycleOrder => {
                 self.playback_queue_order = self.playback_queue_order.next();

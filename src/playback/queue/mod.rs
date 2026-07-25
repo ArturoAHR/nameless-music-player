@@ -1,4 +1,5 @@
 use thiserror::Error;
+use tracing::instrument;
 
 use crate::{track::models::TrackId, traits::Identifiable, ui::widgets::table::TableRow};
 
@@ -45,13 +46,29 @@ impl PlaybackQueue {
         }
     }
 
-    pub fn get_next(&self) -> Option<TrackId> {
+    #[instrument(skip(self), ret)]
+    pub fn get_next(&self, repeat_mode: PlaybackRepeatMode) -> Option<TrackId> {
+        if matches!(repeat_mode, PlaybackRepeatMode::RepeatOne) {
+            return self
+                .queue_track_ids
+                .get(self.cursor)
+                .map(|queue_track_id| *queue_track_id.id());
+        }
+
         self.queue_track_ids
             .get(self.cursor + 1)
             .map(|queue_track_id| *queue_track_id.id())
     }
 
-    pub fn get_previous(&self) -> Option<TrackId> {
+    #[instrument(skip(self), ret)]
+    pub fn get_previous(&self, repeat_mode: PlaybackRepeatMode) -> Option<TrackId> {
+        if matches!(repeat_mode, PlaybackRepeatMode::RepeatOne) {
+            return self
+                .queue_track_ids
+                .get(self.cursor)
+                .map(|queue_track_id| *queue_track_id.id());
+        }
+
         if self.cursor == 0 {
             return None;
         }
@@ -61,7 +78,15 @@ impl PlaybackQueue {
             .map(|queue_track_id| *queue_track_id.id())
     }
 
-    pub fn go_to_next(&mut self) -> Option<TrackId> {
+    #[instrument(skip(self), ret)]
+    pub fn go_to_next(&mut self, repeat_mode: PlaybackRepeatMode) -> Option<TrackId> {
+        if matches!(repeat_mode, PlaybackRepeatMode::RepeatOne) {
+            return self
+                .queue_track_ids
+                .get(self.cursor)
+                .map(|queue_track_id| *queue_track_id.id());
+        }
+
         let next_track_id = self
             .queue_track_ids
             .get(self.cursor + 1)
@@ -74,7 +99,15 @@ impl PlaybackQueue {
         next_track_id
     }
 
-    pub fn go_to_previous(&mut self) -> Option<TrackId> {
+    #[instrument(skip(self), ret)]
+    pub fn go_to_previous(&mut self, repeat_mode: PlaybackRepeatMode) -> Option<TrackId> {
+        if matches!(repeat_mode, PlaybackRepeatMode::RepeatOne) {
+            return self
+                .queue_track_ids
+                .get(self.cursor)
+                .map(|queue_track_id| *queue_track_id.id());
+        }
+
         if self.cursor == 0 {
             return None;
         }

@@ -103,7 +103,9 @@ impl App {
 
     #[instrument(skip(self))]
     pub fn play_next_track(&mut self) -> Result<Task<app::Message>, AppError> {
-        let mut task = if let Some(next_track_id) = self.playback_queue.go_to_next() {
+        let mut task = if let Some(next_track_id) =
+            self.playback_queue.go_to_next(self.playback_repeat_mode)
+        {
             self.play_track(next_track_id)?
         } else {
             info!("Found no more track in the queue");

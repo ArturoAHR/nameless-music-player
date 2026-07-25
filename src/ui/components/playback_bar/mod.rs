@@ -224,9 +224,9 @@ impl PlaybackBar {
             format!("{current_position_timestamp} / {track_duration_timestamp}");
 
         let repeat_mode_icon = match playback_repeat_mode {
-            PlaybackRepeatMode::NoRepeat => 'N', //Placeholder
+            PlaybackRepeatMode::NoRepeat => icons::MENU, //Placeholder
             PlaybackRepeatMode::Repeat => icons::LOOP_TRACKLIST,
-            PlaybackRepeatMode::RepeatOne => '1', //Placeholder
+            PlaybackRepeatMode::RepeatOne => icons::PLAY, //Placeholder
         };
 
         let queue_order_icon = match playback_queue_order {

@@ -36,7 +36,9 @@ impl App {
                 #[allow(clippy::single_match)]
                 match event {
                     AudioPipelineThreadEvent::TrackFinished => {
-                        let Some(next_track_id) = self.playback_queue.go_to_next() else {
+                        let Some(next_track_id) =
+                            self.playback_queue.go_to_next(self.playback_repeat_mode)
+                        else {
                             return Task::none();
                         };
 
