@@ -92,7 +92,9 @@ impl App {
 
                 self.playback_queue.extend(next_track_ids);
 
-                task = self.broadcast(QueueChanged);
+                task = self.broadcast(QueueChanged(
+                    self.playback_queue.get_queue_entries(PLAYBACK_QUEUE_LENGTH),
+                ));
             }
             Message::FinishedGeneratingNextTracks(Err(error)) => {
                 error!("Failed to generate next queue tracks: {error} ");
@@ -117,7 +119,9 @@ impl App {
                 Message::GenerateNextTracks,
             )));
         } else {
-            task = task.chain(self.broadcast(Event::QueueChanged));
+            task = task.chain(self.broadcast(Event::QueueChanged(
+                self.playback_queue.get_queue_entries(PLAYBACK_QUEUE_LENGTH),
+            )));
         }
 
         Ok(task)

@@ -22,7 +22,7 @@ use crate::{
 
 pub mod handler;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct MainPane {
     pub selected_track_ids: FxHashSet<i64>,
     pub displayed_track_ids: Vec<TrackId>,
@@ -53,13 +53,6 @@ pub enum Outcome {
 pub struct MainPaneUpdateContext {}
 
 impl MainPane {
-    pub fn new() -> Self {
-        Self {
-            selected_track_ids: FxHashSet::default(),
-            displayed_track_ids: Vec::new(),
-        }
-    }
-
     #[instrument(skip(self), level = "debug")]
     pub fn update(&mut self, event: Message) -> (Task<Message>, Vec<Outcome>) {
         let task = Task::none();
@@ -159,11 +152,5 @@ impl MainPane {
             ..container::Style::default()
         })
         .into()
-    }
-}
-
-impl Default for MainPane {
-    fn default() -> Self {
-        Self::new()
     }
 }

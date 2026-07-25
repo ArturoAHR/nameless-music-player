@@ -106,7 +106,9 @@ impl App {
                         playback::queue::Message::GenerateNextTracks,
                     )));
                 } else {
-                    task = task.chain(self.broadcast(Event::QueueChanged));
+                    task = task.chain(self.broadcast(Event::QueueChanged(
+                        self.playback_queue.get_queue_entries(PLAYBACK_QUEUE_LENGTH),
+                    )));
                 }
             }
             PlaybackOutcome::PlayPrevious => {

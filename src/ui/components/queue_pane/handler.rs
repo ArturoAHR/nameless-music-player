@@ -9,7 +9,7 @@ use crate::{
 impl App {
     pub fn view_queue_pane(&self) -> Element<'_, app::Message, Theme, Renderer> {
         self.queue_pane
-            .view(&self.theme)
+            .view(&self.theme, &self.tracks, &self.playback_queue)
             .map(app::Message::QueuePane)
     }
 

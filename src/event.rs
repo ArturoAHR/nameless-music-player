@@ -2,6 +2,7 @@ use iced::Task;
 
 use crate::{
     app::{App, Message},
+    playback::queue::PlaybackQueueEntry,
     track::models::Track,
 };
 
@@ -12,7 +13,7 @@ pub enum Event {
     StartedPlayback,
     StoppedPlayback,
     EndOfTrack,
-    QueueChanged,
+    QueueChanged(Vec<PlaybackQueueEntry>),
 }
 
 impl App {

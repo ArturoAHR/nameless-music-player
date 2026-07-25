@@ -178,8 +178,8 @@ impl App {
 
                 navigation_bar: NavigationBar {},
                 explorer_pane: ExplorerPane {},
-                main_pane: MainPane::new(),
-                queue_pane: QueuePane {},
+                main_pane: MainPane::default(),
+                queue_pane: QueuePane::default(),
                 track_information_pane: TrackInformationPane {},
                 status_bar: StatusBar {},
                 playback_bar: PlaybackBar::new(),

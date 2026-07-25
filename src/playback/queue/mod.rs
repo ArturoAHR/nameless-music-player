@@ -210,10 +210,22 @@ pub enum PlaybackQueueEntry {
 }
 
 impl PlaybackQueueEntry {
-    pub fn from_queue_track_id(index: usize, queue_track_id: QueueTrackId) -> Self {
+    pub fn from_queue_track_id(queue_position: usize, queue_track_id: QueueTrackId) -> Self {
         match queue_track_id {
-            QueueTrackId::System(track_id) => Self::System(index, track_id),
-            QueueTrackId::User(track_id) => Self::User(index, track_id),
+            QueueTrackId::System(track_id) => Self::System(queue_position, track_id),
+            QueueTrackId::User(track_id) => Self::User(queue_position, track_id),
+        }
+    }
+
+    pub fn track_id(&self) -> &TrackId {
+        match self {
+            Self::System(_, track_id) | Self::User(_, track_id) => track_id,
+        }
+    }
+
+    pub fn queue_position(&self) -> &usize {
+        match self {
+            Self::System(queue_position, _) | Self::User(queue_position, _) => queue_position,
         }
     }
 }
