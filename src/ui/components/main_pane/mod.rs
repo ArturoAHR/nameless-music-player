@@ -91,7 +91,7 @@ impl MainPane {
         let columns = vec![
             column(TrackTableColumn::NowPlaying, None, move |track: &Track| {
                 if track.id == current_playing_track_id {
-                    icon(icons::PLAY)
+                    icon(icons::PLAY).into()
                 } else {
                     Space::new().into()
                 }

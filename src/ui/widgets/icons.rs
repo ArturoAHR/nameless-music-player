@@ -18,11 +18,15 @@ pub const MENU: char = '\u{E806}';
 pub const VOLUME: char = '\u{E808}';
 pub const VOLUME_MUTED: char = '\u{E80B}';
 
-pub fn icon<'a, M, T>(codepoint: char) -> Element<'a, M, T>
+pub fn icon<'a, Message, Theme, Renderer>(
+    codepoint: char,
+) -> impl Into<Element<'a, Message, Theme, Renderer>>
 where
-    T: Catalog + 'a,
+    Theme: Catalog + 'a,
+    Renderer: iced::advanced::text::Renderer + 'a,
+    <Renderer as iced::advanced::text::Renderer>::Font: From<iced::Font>,
 {
     const ICON_FONT: Font = Font::with_name("music-player-icons");
 
-    text(codepoint).font(ICON_FONT).into()
+    text(codepoint).font(ICON_FONT)
 }

@@ -33,20 +33,21 @@ impl Sizes {
         },
         component: ComponentSizes {
             app_header_height: 32.0,
-            nav_bar_height: 36.0,
-            status_bar_height: 22.0,
-            playback_bar_height: 72.0,
+            nav_bar_height: 35.0,
+            status_bar_height: 20.0,
+            playback_bar_height: 90.0,
 
-            table_row_height: 28.0,
-            table_header_height: 32.0,
-            table_column_min_width: 60.0,
+            table_row_height: 30.0,
+            table_header_height: 35.0,
+            table_column_default_width: 100.0,
+            table_column_min_width: 20.0,
 
             button_height: 28.0,
             input_height: 28.0,
 
             scrollbar_width: 8.0,
-            pane_min_width: 160.0,
-            pane_min_height: 80.0,
+            pane_min_width: 200.0,
+            pane_min_height: 50.0,
 
             progress_thickness: 4.0,
             progress_handle_diameter: 12.0,
@@ -100,13 +101,16 @@ pub struct ComponentSizes {
 
     pub table_row_height: f32,
     pub table_header_height: f32,
+    pub table_column_default_width: f32,
     pub table_column_min_width: f32,
 
     pub button_height: f32,
     pub input_height: f32,
 
     pub scrollbar_width: f32,
+    /// Represents the minimum width of a pane in a vertical split to prevent collapsing panes completely.
     pub pane_min_width: f32,
+    /// Represents the minimum height of a pane in a horizontal split to prevent collapsing panes completely.
     pub pane_min_height: f32,
 
     pub progress_thickness: f32,

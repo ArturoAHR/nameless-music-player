@@ -18,10 +18,7 @@ use tracing::{error, info, instrument};
 
 use crate::{
     app::Message::LoadTracks,
-    constants::{
-        CURRENT_PLAYBACK_POSITION_POLL_INTERVAL_MS, MIN_HORIZONTAL_SPLIT_PANE_HEIGHT,
-        MIN_VERTICAL_SPLIT_PANE_WIDTH,
-    },
+    constants::CURRENT_PLAYBACK_POSITION_POLL_INTERVAL_MS,
     error::AppError,
     library::scanner::scan_files_in_directory,
     playback::{
@@ -233,7 +230,7 @@ impl App {
                             split_ratio,
                             main_queue_split_ratio,
                             From::<f32>::from(self.window_size.width),
-                            MIN_VERTICAL_SPLIT_PANE_WIDTH,
+                            From::<f32>::from(self.theme.sizes.component.pane_min_width),
                         ) {
                             self.pane_split_ratio.explorer_main = split_ratio;
                             self.pane_split_ratio.main_queue = main_queue_split_ratio;
@@ -244,7 +241,7 @@ impl App {
                             self.pane_split_ratio.explorer_main,
                             split_ratio,
                             From::<f32>::from(self.window_size.width),
-                            MIN_VERTICAL_SPLIT_PANE_WIDTH,
+                            From::<f32>::from(self.theme.sizes.component.pane_min_width),
                         ) {
                             self.pane_split_ratio.main_queue = split_ratio;
                         }
@@ -253,7 +250,7 @@ impl App {
                         if are_pane_heights_valid(
                             split_ratio,
                             From::<f32>::from(self.window_size.height),
-                            MIN_HORIZONTAL_SPLIT_PANE_HEIGHT,
+                            From::<f32>::from(self.theme.sizes.component.pane_min_height),
                         ) {
                             self.pane_split_ratio.queue_track_information = split_ratio;
                         }

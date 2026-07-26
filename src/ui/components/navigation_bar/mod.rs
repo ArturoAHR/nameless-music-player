@@ -42,7 +42,7 @@ impl NavigationBar {
 
     pub fn view<'a>(&'a self, theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
         container(row![navigation_bar_menu(theme)])
-            .height(Length::Fixed(35.0))
+            .height(Length::Fixed(theme.sizes.component.nav_bar_height))
             .width(Length::Fill)
             .style(|theme: &Theme| container::Style {
                 background: Some(theme.palette.surface_sunken.into()),

@@ -185,7 +185,7 @@ impl PlaybackBar {
 
     pub fn view<'a>(
         &'a self,
-        _theme: &Theme,
+        theme: &Theme,
         tracks: &FxHashMap<TrackId, Track>,
         current_playing_track_id: Option<&TrackId>,
         playback_repeat_mode: PlaybackRepeatMode,
@@ -236,7 +236,7 @@ impl PlaybackBar {
 
         container(
             row![
-                row![play_previous, play_button, play_next].spacing(10.0),
+                row![play_previous, play_button, play_next].spacing(theme.sizes.space.md),
                 column![
                     row![
                         ellipsized_text(track_name_label),
@@ -246,18 +246,18 @@ impl PlaybackBar {
                     slider(0.0..=total_frames, current_position, Message::Scrubbed)
                         .on_release(Message::Seeked)
                 ]
-                .spacing(10.0),
+                .spacing(theme.sizes.space.md),
                 volume_bar(self.volume_percentage, self.muted),
                 button(icon(repeat_mode_icon)).on_press(Message::CycleRepeatMode),
                 button(icon(queue_order_icon)).on_press(Message::CycleQueueOrder),
             ]
             .align_y(Alignment::Center)
-            .spacing(20.0),
+            .spacing(theme.sizes.space.xxl),
         )
-        .height(Length::Fixed(90.0))
+        .height(Length::Fixed(theme.sizes.component.playback_bar_height))
         .width(Length::Fill)
         .align_y(Alignment::Center)
-        .padding(Padding::from(15.0))
+        .padding(Padding::from(theme.sizes.space.xl))
         .style(|theme: &Theme| container::Style {
             background: Some(theme.palette.surface_raised.into()),
             ..container::Style::default()

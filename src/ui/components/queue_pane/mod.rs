@@ -85,7 +85,7 @@ impl QueuePane {
                 None,
                 move |entry: &PlaybackQueueEntry| {
                     if *entry.queue_position() == 0 {
-                        icon(icons::PLAY)
+                        icon(icons::PLAY).into()
                     } else {
                         Space::new().into()
                     }

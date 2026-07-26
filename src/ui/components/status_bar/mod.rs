@@ -18,12 +18,6 @@ pub enum Message {}
 pub enum Outcome {}
 
 #[derive(Debug)]
-pub struct StatusBarViewContext<'a> {
-    pub theme: &'a Theme,
-    pub status: &'a AppStatus,
-}
-
-#[derive(Debug)]
 pub struct StatusBarUpdateContext {}
 
 impl StatusBar {
@@ -37,15 +31,19 @@ impl StatusBar {
         Task::none()
     }
 
-    pub fn view<'a>(&'a self, ctx: StatusBarViewContext) -> Element<'a, Message, Theme, Renderer> {
-        let status_label = match ctx.status {
+    pub fn view<'a>(
+        &'a self,
+        theme: &Theme,
+        status: &AppStatus,
+    ) -> Element<'a, Message, Theme, Renderer> {
+        let status_label = match status {
             AppStatus::Idle => "",
             AppStatus::AddingTracks => "Adding tracks",
             AppStatus::FinishedAddingTracks => "Finished adding tracks",
         };
 
         container(text(status_label))
-            .height(Length::Fixed(20.0))
+            .height(Length::Fixed(theme.sizes.component.status_bar_height))
             .width(Length::Fill)
             .style(|theme: &Theme| container::Style {
                 background: Some(theme.palette.surface_sunken.into()),
