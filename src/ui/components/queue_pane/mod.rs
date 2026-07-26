@@ -51,7 +51,9 @@ impl QueuePane {
         let outcomes = Vec::new();
 
         match message {
-            Message::TrackRowDoubleClicked(_queue_entry) => {}
+            Message::TrackRowDoubleClicked(_queue_entry) => {
+                // TODO: Implement playing moving ahead in the queue.
+            }
             Message::TrackRowSelected(selected_entries) => {
                 self.selected_entries = selected_entries;
             }

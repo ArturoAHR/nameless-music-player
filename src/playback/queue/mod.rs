@@ -26,6 +26,7 @@ pub struct PlaybackQueue {
     track_pool: Vec<TrackId>,
 }
 
+// TODO: Add unit tests
 impl PlaybackQueue {
     pub fn new() -> Self {
         Self {
@@ -170,6 +171,8 @@ impl PlaybackQueue {
     pub fn set_cursor(&mut self, cursor: usize) {
         if self.queue_track_ids.is_empty() {
             self.cursor = 0;
+
+            return;
         }
 
         self.cursor = cursor.min(self.queue_track_ids.len() - 1);

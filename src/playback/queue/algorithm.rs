@@ -29,6 +29,8 @@ pub struct PlaybackQueueSequentialAlgorithm {
     cursor: usize,
 }
 
+// TODO: Make sequential playing order more intuitive, overriding previous playback_queue contents so it
+// is truly sequential when playing previous tracks
 impl PlaybackQueueSequentialAlgorithm {
     pub fn new(playback_queue: &PlaybackQueue) -> Self {
         Self {
