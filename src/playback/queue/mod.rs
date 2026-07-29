@@ -168,6 +168,9 @@ impl PlaybackQueue {
             self.cursor = self.cursor.saturating_sub(1);
         }
 
+        // Guards against cursor falling outside of queue entries.
+        self.cursor = self.cursor.min(self.entries.len().saturating_sub(1));
+
         Ok(())
     }
 
