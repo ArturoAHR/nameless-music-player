@@ -1,21 +1,10 @@
-use std::sync::Arc;
-
 use iced::Task;
-use tokio::sync::Mutex;
 use tracing::instrument;
 
 use crate::{
     app::{App, Message},
-    constants::PLAYBACK_QUEUE_LENGTH,
     error::AppError,
-    playback::{
-        self,
-        controller::PlaybackControllerStatus,
-        queue::{
-            PlaybackQueueOrder,
-            algorithm::{PlaybackQueueRandomShuffleAlgorithm, PlaybackQueueSequentialAlgorithm},
-        },
-    },
+    playback::controller::PlaybackControllerStatus,
     track::models::TrackId,
 };
 
@@ -88,66 +77,26 @@ impl App {
 
                 self.playback_queue
                     .start(self.displayed_track_ids.clone(), Some(track_id));
-
-                task = task.chain(Task::done(Message::PlaybackQueue(
-                    playback::queue::Message::RegenerateNextTracks,
-                )));
             }
             PlaybackOutcome::PlayNext => {
-                let next_track_id = self.playback_queue.go_to_next(self.playback_repeat_mode);
+                let next_track_id = self.playback_queue.go_to_next();
 
                 if let Some(next_track_id) = next_track_id {
                     task = self.play_track(next_track_id)?;
                 }
-
-                if self.playback_queue.get_remaining_tracks() <= PLAYBACK_QUEUE_LENGTH {
-                    task = task.chain(Task::done(Message::PlaybackQueue(
-                        playback::queue::Message::GenerateNextTracks,
-                    )));
-                } else {
-                    task = task.chain(self.broadcast_queue_changed());
-                }
             }
             PlaybackOutcome::PlayPrevious => {
-                let previous_track_id = self
-                    .playback_queue
-                    .go_to_previous(self.playback_repeat_mode);
+                let previous_track_id = self.playback_queue.go_to_previous();
 
                 if let Some(previous_track_id) = previous_track_id {
                     task = self.play_track(previous_track_id)?;
                 }
             }
             PlaybackOutcome::CycleRepeatMode => {
-                let next_repeat_mode = self.playback_repeat_mode.next();
-
-                if self.playback_repeat_mode.is_repeating() != next_repeat_mode.is_repeating() {
-                    task = task.chain(Task::done(Message::PlaybackQueue(
-                        playback::queue::Message::RegenerateNextTracks,
-                    )));
-                }
-
-                self.playback_repeat_mode = next_repeat_mode;
+                self.playback_queue.cycle_repeat_mode();
             }
             PlaybackOutcome::CycleOrder => {
-                self.playback_queue_order = self.playback_queue_order.next();
-
-                match self.playback_queue_order {
-                    PlaybackQueueOrder::Sequential => {
-                        let algorithm = PlaybackQueueSequentialAlgorithm::new(&self.playback_queue);
-
-                        self.playback_queue_algorithm = Arc::new(Mutex::new(Box::new(algorithm)));
-                    }
-
-                    PlaybackQueueOrder::Shuffle => {
-                        let algorithm = PlaybackQueueRandomShuffleAlgorithm::default();
-
-                        self.playback_queue_algorithm = Arc::new(Mutex::new(Box::new(algorithm)));
-                    }
-                }
-
-                task = Task::done(Message::PlaybackQueue(
-                    playback::queue::Message::RegenerateNextTracks,
-                ));
+                self.playback_queue.cycle_queue_order();
             }
         }
 

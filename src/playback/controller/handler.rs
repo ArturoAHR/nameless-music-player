@@ -23,6 +23,32 @@ pub enum Message {
 }
 
 impl App {
+    fn get_current_position(&self) -> Option<f64> {
+        if matches!(
+            self.playback_controller.status,
+            PlaybackControllerStatus::Stopped
+        ) {
+            return None;
+        }
+
+        let audio_engine_generation = self.playback_controller.get_audio_engine_generation();
+        if audio_engine_generation <= self.playback_bar.current_position_generation_threshold {
+            return None;
+        }
+
+        let track = self
+            .current_playing_track_id
+            .and_then(|track_id| self.tracks.get(&track_id))?;
+
+        let output_format = self.playback_controller.output_format.as_ref()?;
+
+        let current_position = self.playback_controller.get_current_track_samples_played() as f64
+            * (track.sample_rate as f64 / f64::from(output_format.sample_rate))
+            / f64::from(output_format.channels);
+
+        Some(current_position)
+    }
+
     #[instrument(skip(self))]
     pub fn handle_playback_controller(&mut self, message: Message) -> Task<app::Message> {
         let mut task = Task::none();
@@ -35,72 +61,32 @@ impl App {
 
                 #[allow(clippy::single_match)]
                 match event {
-                    AudioPipelineThreadEvent::TrackFinished => {
-                        let Some(next_track_id) =
-                            self.playback_queue.go_to_next(self.playback_repeat_mode)
-                        else {
-                            return Task::none();
-                        };
-
-                        task = self.broadcast_queue_changed();
-
-                        match self.play_track(next_track_id) {
-                            Ok(event_tasks) => return event_tasks,
-                            Err(error) => {
-                                error!("Could not play next track: {error}");
-                            }
+                    AudioPipelineThreadEvent::TrackFinished => match self.play_next_track() {
+                        Ok(event_tasks) => task = event_tasks,
+                        Err(error) => {
+                            error!("Could not play next track: {error}");
                         }
-                    }
+                    },
                     _ => {}
                 }
             }
             Message::PollPlaybackCurrentPlaybackPosition => {
-                if matches!(
-                    self.playback_controller.status,
-                    PlaybackControllerStatus::Stopped
-                ) {
-                    return Task::none();
-                }
-
-                let Some(track) = self
-                    .current_playing_track_id
-                    .and_then(|track_id| self.tracks.get(&track_id))
-                else {
-                    return Task::none();
-                };
-
-                let Some(output_format) = self.playback_controller.output_format.as_ref() else {
-                    return Task::none();
-                };
-
-                let audio_engine_generation =
-                    self.playback_controller.get_audio_engine_generation();
-
-                if audio_engine_generation
-                    <= self.playback_bar.current_position_generation_threshold
-                {
-                    return Task::none();
-                }
-
-                let current_position = self.playback_controller.get_current_track_samples_played()
-                    as f64
-                    * (track.sample_rate as f64 / f64::from(output_format.sample_rate))
-                    / f64::from(output_format.channels);
-
-                task = Task::done(app::Message::PlaybackBar(
-                    playback_bar::Message::PlaybackProgressed(current_position),
-                ));
-            }
-            Message::PendingOutputDeviceChange => {
-                if let Err(error) = self.playback_controller.build_output() {
-                    return Task::done(app::Message::PlaybackController(
-                        Message::OutputDeviceChangeFailed(error),
+                if let Some(current_position) = self.get_current_position() {
+                    task = Task::done(app::Message::PlaybackBar(
+                        playback_bar::Message::PlaybackProgressed(current_position),
                     ));
                 }
-
-                task = Task::done(app::Message::PlaybackController(
-                    Message::OutputDeviceChanged,
-                ));
+            }
+            Message::PendingOutputDeviceChange => {
+                task = if let Err(error) = self.playback_controller.build_output() {
+                    Task::done(app::Message::PlaybackController(
+                        Message::OutputDeviceChangeFailed(error),
+                    ))
+                } else {
+                    Task::done(app::Message::PlaybackController(
+                        Message::OutputDeviceChanged,
+                    ))
+                };
             }
             Message::OutputDeviceChangeFailed(error) => {
                 error!("Failed to initialize playback output: {error}");

@@ -1,9 +1,16 @@
+use std::collections::VecDeque;
+
 use thiserror::Error;
 use tracing::instrument;
 
-use crate::{track::models::TrackId, traits::Identifiable, ui::widgets::table::TableRow};
+use crate::{
+    constants::PLAYBACK_QUEUE_LENGTH,
+    playback::queue::entry::{PlaybackQueueEntry, PlaybackQueueEntryId, PlaybackQueueEntrySource},
+    track::models::TrackId,
+};
 
-pub mod algorithm;
+pub mod entry;
+mod generation;
 pub mod handler;
 
 pub use handler::Message;
@@ -16,110 +23,108 @@ pub enum PlaybackQueueError {
 
 #[derive(Debug, Clone)]
 pub struct PlaybackQueue {
+    /// Incrementing unique identifier granted to each queue entry upon creation.
+    next_entry_id: PlaybackQueueEntryId,
+
     /// Current position in the queue.
-    cursor: usize,
+    pub cursor: usize,
 
     /// Contains the ids of the tracks that are in the queue.
-    queue_track_ids: Vec<QueueTrackId>,
+    pub entries: VecDeque<PlaybackQueueEntry>,
 
-    /// Contains the list of tracks from which the queue can pick from, it assumes the list is non-repeating.
+    /// Contains the list of track ids from which the queue can pick from, it assumes the list is non-repeating.
     track_pool: Vec<TrackId>,
+
+    pub repeat_mode: PlaybackRepeatMode,
+    pub order: PlaybackQueueOrder,
 }
 
 // TODO: Add unit tests
 impl PlaybackQueue {
     pub fn new() -> Self {
         Self {
+            next_entry_id: 0,
             cursor: 0,
-            queue_track_ids: Vec::new(),
+            entries: VecDeque::new(),
             track_pool: Vec::new(),
+            repeat_mode: PlaybackRepeatMode::NoRepeat,
+            order: PlaybackQueueOrder::Sequential,
         }
+    }
+
+    fn get_next_entry_id(&mut self) -> PlaybackQueueEntryId {
+        let id = self.next_entry_id;
+        self.next_entry_id += 1;
+        id
     }
 
     pub fn start(&mut self, track_pool: Vec<TrackId>, current_playing_track_id: Option<TrackId>) {
         self.cursor = 0;
-        self.queue_track_ids.clear();
+        self.entries.clear();
         self.track_pool = track_pool;
 
         if let Some(current_playing_track_id) = current_playing_track_id {
-            self.queue_track_ids
-                .push(From::<TrackId>::from(current_playing_track_id));
+            let id = self.get_next_entry_id();
+
+            self.entries
+                .push_back(PlaybackQueueEntry::system(id, current_playing_track_id));
         }
     }
 
     #[instrument(skip(self), ret)]
-    pub fn get_next(&self, repeat_mode: PlaybackRepeatMode) -> Option<TrackId> {
-        if matches!(repeat_mode, PlaybackRepeatMode::RepeatOne) {
-            return self
-                .queue_track_ids
-                .get(self.cursor)
-                .map(|queue_track_id| *queue_track_id.id());
-        }
+    pub fn current(&self) -> Option<TrackId> {
+        self.entries.get(self.cursor).map(|entry| entry.track_id)
+    }
 
-        self.queue_track_ids
+    pub fn peek_next(&self) -> Option<TrackId> {
+        self.entries
             .get(self.cursor + 1)
-            .map(|queue_track_id| *queue_track_id.id())
+            .map(|entry| entry.track_id)
     }
 
-    #[instrument(skip(self), ret)]
-    pub fn get_previous(&self, repeat_mode: PlaybackRepeatMode) -> Option<TrackId> {
-        if matches!(repeat_mode, PlaybackRepeatMode::RepeatOne) {
-            return self
-                .queue_track_ids
-                .get(self.cursor)
-                .map(|queue_track_id| *queue_track_id.id());
-        }
-
+    pub fn peek_previous(&mut self) -> Option<TrackId> {
         if self.cursor == 0 {
-            return None;
+            self.generate_previous_entries(PLAYBACK_QUEUE_LENGTH);
         }
 
-        self.queue_track_ids
-            .get(self.cursor - 1)
-            .map(|queue_track_id| *queue_track_id.id())
+        let previous_track_index = self.cursor.checked_sub(1)?;
+        self.entries
+            .get(previous_track_index)
+            .map(|entry| entry.track_id)
     }
 
     #[instrument(skip(self), ret)]
-    pub fn go_to_next(&mut self, repeat_mode: PlaybackRepeatMode) -> Option<TrackId> {
-        if matches!(repeat_mode, PlaybackRepeatMode::RepeatOne) {
-            return self
-                .queue_track_ids
-                .get(self.cursor)
-                .map(|queue_track_id| *queue_track_id.id());
-        }
-
+    pub fn go_to_next(&mut self) -> Option<TrackId> {
         let next_track_id = self
-            .queue_track_ids
+            .entries
             .get(self.cursor + 1)
-            .map(|queue_track_id| *queue_track_id.id());
+            .map(|entry| entry.track_id);
 
         if next_track_id.is_some() {
             self.cursor += 1;
+        }
+
+        if self.get_remaining_tracks() <= PLAYBACK_QUEUE_LENGTH {
+            self.generate_next_entries(PLAYBACK_QUEUE_LENGTH);
         }
 
         next_track_id
     }
 
     #[instrument(skip(self), ret)]
-    pub fn go_to_previous(&mut self, repeat_mode: PlaybackRepeatMode) -> Option<TrackId> {
-        if matches!(repeat_mode, PlaybackRepeatMode::RepeatOne) {
-            return self
-                .queue_track_ids
-                .get(self.cursor)
-                .map(|queue_track_id| *queue_track_id.id());
-        }
-
+    pub fn go_to_previous(&mut self) -> Option<TrackId> {
         if self.cursor == 0 {
-            return None;
+            self.generate_previous_entries(PLAYBACK_QUEUE_LENGTH);
         }
 
+        let previous_track_index = self.cursor.checked_sub(1)?;
         let previous_track_id = self
-            .queue_track_ids
-            .get(self.cursor - 1)
-            .map(|queue_track_id| *queue_track_id.id());
+            .entries
+            .get(previous_track_index)
+            .map(|entry| entry.track_id);
 
         if previous_track_id.is_some() {
-            self.cursor -= 1;
+            self.cursor = self.cursor.saturating_sub(1);
         }
 
         previous_track_id
@@ -128,18 +133,22 @@ impl PlaybackQueue {
     /// Inserts a track id in the queue at the given index, if the index is out of bounds it
     /// adds the track id at the end.
     pub fn insert(&mut self, index: usize, track_id: TrackId) {
-        let insert_index = index.min(self.queue_track_ids.len());
+        let insert_index = index.min(self.entries.len());
 
-        self.queue_track_ids
-            .insert(insert_index, QueueTrackId::User(track_id));
+        let id = self.get_next_entry_id();
+
+        self.entries
+            .insert(insert_index, PlaybackQueueEntry::user(id, track_id));
     }
 
     /// Inserts a track id at the next position in the queue.
     pub fn insert_next(&mut self, track_id: TrackId) {
-        let insert_index = (self.cursor + 1).min(self.queue_track_ids.len());
+        let insert_index = (self.cursor + 1).min(self.entries.len());
 
-        self.queue_track_ids
-            .insert(insert_index, QueueTrackId::User(track_id));
+        let id = self.get_next_entry_id();
+
+        self.entries
+            .insert(insert_index, PlaybackQueueEntry::user(id, track_id));
     }
 
     /// Removes a track id from the queue at the given index, bear in mind this index
@@ -149,14 +158,14 @@ impl PlaybackQueue {
     /// # Errors
     /// This method will fail if the index is out of bounds.
     pub fn remove(&mut self, index: usize) -> Result<(), PlaybackQueueError> {
-        if index >= self.queue_track_ids.len() {
+        if index >= self.entries.len() {
             return Err(PlaybackQueueError::InvalidQueueRemovePosition);
         }
 
-        self.queue_track_ids.remove(index);
+        self.entries.remove(index);
 
         if index < self.cursor {
-            self.cursor -= 1;
+            self.cursor = self.cursor.saturating_sub(1);
         }
 
         Ok(())
@@ -169,114 +178,73 @@ impl PlaybackQueue {
     }
 
     pub fn set_cursor(&mut self, cursor: usize) {
-        if self.queue_track_ids.is_empty() {
-            self.cursor = 0;
-
-            return;
-        }
-
-        self.cursor = cursor.min(self.queue_track_ids.len() - 1);
+        self.cursor = cursor.min(self.entries.len().saturating_sub(1));
     }
 
-    /// Extends the queue with system queued tracks
-    pub fn extend(&mut self, next_track_ids: Vec<TrackId>) {
-        let next_track_ids: Vec<QueueTrackId> = next_track_ids
-            .into_iter()
-            .map(From::<TrackId>::from)
-            .collect();
-
-        self.queue_track_ids.extend(next_track_ids);
-    }
-
-    /// Removes all the upcoming tracks
+    /// Removes all upcoming system entries from the queue
     pub fn truncate(&mut self) {
-        self.queue_track_ids.truncate(self.cursor + 1);
+        self.entries = self
+            .entries
+            .iter()
+            .enumerate()
+            .filter_map(|(index, entry)| {
+                (index <= self.cursor || matches!(entry.source, PlaybackQueueEntrySource::User))
+                    .then_some(entry)
+            })
+            .copied()
+            .collect();
     }
 
-    pub fn get_queue_entries(&self, amount: usize) -> Vec<PlaybackQueueEntry> {
-        self.queue_track_ids
+    /// Removes all tracks except the current one and the unplayed entries inserted by the user.
+    pub fn prune(&mut self) {
+        self.entries = self
+            .entries
             .iter()
-            .skip(self.cursor)
-            .take(amount)
-            .copied()
             .enumerate()
-            .map(|(index, queue_track_id)| {
-                PlaybackQueueEntry::from_queue_track_id(index, queue_track_id)
+            .filter_map(|(index, entry)| {
+                (index == self.cursor
+                    || matches!(entry.source, PlaybackQueueEntrySource::User)
+                        && index > self.cursor)
+                    .then_some(entry)
             })
-            .collect()
+            .copied()
+            .collect();
     }
 
     pub fn get_remaining_tracks(&self) -> usize {
-        self.queue_track_ids.len() - self.cursor
+        self.entries.len().saturating_sub(self.cursor)
+    }
+
+    pub fn cycle_queue_order(&mut self) {
+        self.order = self.order.next();
+
+        self.prune();
+        self.generate_next_entries(PLAYBACK_QUEUE_LENGTH);
+    }
+
+    pub fn cycle_repeat_mode(&mut self) {
+        let previous_repeat_mode = self.repeat_mode;
+
+        self.repeat_mode = self.repeat_mode.next();
+
+        if previous_repeat_mode.is_repeating() != self.repeat_mode.is_repeating() {
+            match self.order {
+                PlaybackQueueOrder::Sequential => {
+                    self.prune();
+                }
+                PlaybackQueueOrder::Shuffle => {
+                    self.truncate();
+                }
+            }
+        }
+
+        self.generate_next_entries(PLAYBACK_QUEUE_LENGTH);
     }
 }
 
 impl Default for PlaybackQueue {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum QueueTrackId {
-    System(TrackId),
-    User(TrackId),
-}
-
-impl From<TrackId> for QueueTrackId {
-    fn from(track_id: TrackId) -> Self {
-        Self::System(track_id)
-    }
-}
-
-impl Identifiable for QueueTrackId {
-    type Identifier = TrackId;
-
-    fn id(&self) -> &Self::Identifier {
-        match self {
-            Self::System(track_id) | Self::User(track_id) => track_id,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum PlaybackQueueEntry {
-    System(usize, TrackId),
-    User(usize, TrackId),
-}
-
-impl PlaybackQueueEntry {
-    pub fn from_queue_track_id(queue_position: usize, queue_track_id: QueueTrackId) -> Self {
-        match queue_track_id {
-            QueueTrackId::System(track_id) => Self::System(queue_position, track_id),
-            QueueTrackId::User(track_id) => Self::User(queue_position, track_id),
-        }
-    }
-
-    pub fn track_id(&self) -> &TrackId {
-        match self {
-            Self::System(_, track_id) | Self::User(_, track_id) => track_id,
-        }
-    }
-
-    pub fn queue_position(&self) -> &usize {
-        match self {
-            Self::System(queue_position, _) | Self::User(queue_position, _) => queue_position,
-        }
-    }
-}
-
-impl Identifiable for PlaybackQueueEntry {
-    type Identifier = Self;
-
-    fn id(&self) -> &Self::Identifier {
-        self
-    }
-}
-
-impl TableRow for PlaybackQueueEntry {
-    fn header_row_id() -> Self::Identifier {
-        Self::System(0, -1)
     }
 }
 

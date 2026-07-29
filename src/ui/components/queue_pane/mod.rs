@@ -7,8 +7,12 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use tracing::instrument;
 
 use crate::{
+    constants::PLAYBACK_QUEUE_LENGTH,
     event::Event,
-    playback::queue::{PlaybackQueue, PlaybackQueueEntry},
+    playback::queue::{
+        PlaybackQueue,
+        entry::{PlaybackQueueEntry, PlaybackQueueEntryId},
+    },
     track::models::{Track, TrackId},
     ui::{
         theme::Theme,
@@ -23,8 +27,7 @@ pub mod handler;
 
 #[derive(Debug, Default)]
 pub struct QueuePane {
-    queue_entries: Vec<PlaybackQueueEntry>,
-    selected_entries: FxHashSet<PlaybackQueueEntry>,
+    selected_entries: FxHashSet<PlaybackQueueEntryId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -37,8 +40,8 @@ pub enum QueueTableColumn {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    TrackRowDoubleClicked(PlaybackQueueEntry),
-    TrackRowSelected(FxHashSet<PlaybackQueueEntry>),
+    TrackRowDoubleClicked(PlaybackQueueEntryId),
+    TrackRowSelected(FxHashSet<PlaybackQueueEntryId>),
 }
 
 #[derive(Debug, Clone)]
@@ -64,14 +67,6 @@ impl QueuePane {
 
     #[instrument(skip(self), level = "debug")]
     pub fn on_event(&mut self, event: &Event) -> Task<Message> {
-        #[allow(clippy::single_match)]
-        match event {
-            Event::QueueChanged(queue_entries) => {
-                self.queue_entries.clone_from(queue_entries);
-            }
-            _ => {}
-        }
-
         Task::none()
     }
 
@@ -79,14 +74,15 @@ impl QueuePane {
         &'a self,
         _theme: &Theme,
         tracks: &'a FxHashMap<TrackId, Track>,
-        _playback_queue: &PlaybackQueue,
+        playback_queue: &'a PlaybackQueue,
     ) -> Element<'a, Message, Theme, Renderer> {
         let columns = vec![
             column(
                 QueueTableColumn::NowPlaying,
                 None,
                 move |entry: &PlaybackQueueEntry| {
-                    if *entry.queue_position() == 0 {
+                    // TODO: Properly derive queue position
+                    if entry.track_id == 0 {
                         icon(icons::PLAY).into()
                     } else {
                         Space::new().into()
@@ -97,7 +93,7 @@ impl QueuePane {
             column(
                 QueueTableColumn::TrackNumber,
                 Some(text("#").into()),
-                |entry: &PlaybackQueueEntry| text(format!("{}.", (entry.queue_position() + 1))),
+                |_entry: &PlaybackQueueEntry| text("#"),
             )
             .width(35.0),
             column(
@@ -105,7 +101,7 @@ impl QueuePane {
                 Some(text("Title").into()),
                 |entry: &PlaybackQueueEntry| {
                     let track_title = tracks
-                        .get(entry.track_id())
+                        .get(&entry.track_id)
                         .and_then(|track| track.title.as_deref())
                         .unwrap_or("Missing title");
 
@@ -119,7 +115,7 @@ impl QueuePane {
                 Some(text("Artist").into()),
                 |entry: &PlaybackQueueEntry| {
                     let track_artist = tracks
-                        .get(entry.track_id())
+                        .get(&entry.track_id)
                         .and_then(|track| track.artist.as_deref())
                         .unwrap_or("Unknown");
 
@@ -130,8 +126,15 @@ impl QueuePane {
             .resizable(true),
         ];
 
+        let queue_entries = playback_queue
+            .entries
+            .iter()
+            .skip(playback_queue.cursor)
+            .take(PLAYBACK_QUEUE_LENGTH)
+            .collect();
+
         container(
-            table(columns, self.queue_entries.iter().collect())
+            table(columns, queue_entries)
                 .selected_rows(&self.selected_entries)
                 .on_row_select(Message::TrackRowSelected)
                 .on_row_double_click(Message::TrackRowDoubleClicked),

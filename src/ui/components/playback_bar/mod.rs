@@ -11,7 +11,7 @@ use crate::{
     outcome::PlaybackOutcome,
     playback::{
         controller::PlaybackControllerStatus,
-        queue::{PlaybackQueueOrder, PlaybackRepeatMode},
+        queue::{PlaybackQueue, PlaybackQueueOrder, PlaybackRepeatMode},
     },
     track::{
         models::{Track, TrackId},
@@ -188,8 +188,7 @@ impl PlaybackBar {
         theme: &Theme,
         tracks: &FxHashMap<TrackId, Track>,
         current_playing_track_id: Option<&TrackId>,
-        playback_repeat_mode: PlaybackRepeatMode,
-        playback_queue_order: PlaybackQueueOrder,
+        playback_queue: &PlaybackQueue,
     ) -> Element<'a, Message, Theme, Renderer> {
         let mut total_frames = 1.0;
         let mut current_position = 0.0;
@@ -223,13 +222,13 @@ impl PlaybackBar {
         let current_time_label =
             format!("{current_position_timestamp} / {track_duration_timestamp}");
 
-        let repeat_mode_icon = match playback_repeat_mode {
+        let repeat_mode_icon = match playback_queue.repeat_mode {
             PlaybackRepeatMode::NoRepeat => icons::MENU, //Placeholder
             PlaybackRepeatMode::Repeat => icons::LOOP_TRACKLIST,
             PlaybackRepeatMode::RepeatOne => icons::PLAY, //Placeholder
         };
 
-        let queue_order_icon = match playback_queue_order {
+        let queue_order_icon = match playback_queue.order {
             PlaybackQueueOrder::Sequential => icons::NO_SHUFFLE,
             PlaybackQueueOrder::Shuffle => icons::SHUFFLE,
         };

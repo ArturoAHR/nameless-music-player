@@ -1,7 +1,4 @@
-use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::path::{Path, PathBuf};
 
 use iced_split::{horizontal_split, vertical_split};
 use rustc_hash::FxHashMap;
@@ -13,7 +10,6 @@ use iced::{
     widget::{column, container},
     window,
 };
-use tokio::sync::Mutex;
 use tracing::{error, info, instrument};
 
 use crate::{
@@ -25,10 +21,7 @@ use crate::{
         self,
         controller::{PlaybackController, PlaybackControllerStatus},
         pipeline::thread::AudioPipelineThreadEvent,
-        queue::{
-            PlaybackQueue, PlaybackQueueOrder, PlaybackRepeatMode,
-            algorithm::{PlaybackQueueAlgorithm, PlaybackQueueSequentialAlgorithm},
-        },
+        queue::PlaybackQueue,
     },
     subscriptions::{
         audio_device::watch_default_device,
@@ -72,9 +65,6 @@ pub struct App {
 
     pub playback_controller: PlaybackController,
     pub playback_queue: PlaybackQueue,
-    pub playback_queue_algorithm: Arc<Mutex<Box<dyn PlaybackQueueAlgorithm + Send>>>,
-    pub playback_repeat_mode: PlaybackRepeatMode,
-    pub playback_queue_order: PlaybackQueueOrder,
 
     pub navigation_bar: NavigationBar,
     pub explorer_pane: ExplorerPane,
@@ -167,11 +157,6 @@ impl App {
 
                 playback_controller,
                 playback_queue: PlaybackQueue::default(),
-                playback_queue_algorithm: Arc::new(Mutex::new(Box::new(
-                    PlaybackQueueSequentialAlgorithm::new(&PlaybackQueue::default()),
-                ))),
-                playback_repeat_mode: PlaybackRepeatMode::NoRepeat,
-                playback_queue_order: PlaybackQueueOrder::Sequential,
 
                 navigation_bar: NavigationBar {},
                 explorer_pane: ExplorerPane {},
@@ -317,7 +302,6 @@ impl App {
             Message::StatusBar(message) => task = self.handle_status_bar(message),
             Message::PlaybackBar(message) => task = self.handle_playback_bar(message),
             Message::PlaybackController(message) => task = self.handle_playback_controller(message),
-            Message::PlaybackQueue(message) => task = self.handle_playback_queue(message),
         }
 
         task
