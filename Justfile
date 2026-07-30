@@ -1,78 +1,80 @@
 set dotenv-load
 
 # Run
-run:
-  cargo run --features development
+run *args:
+  cargo run --features development {{args}}
 
 # Setup development environment
 setup:
     cog install-hook --all
 
-# Hot Reload
-watch:
-  cargo watch -i "target/*" -i "*.log" -x check -x "run --features development"
-
-# Hot Reload with Testing in the Loop
-watch-test:
-  cargo watch -i "target/*" -i "*.log" -x check -x "test --lib" -x "run --features development"
-
 # Run tests
-test:
-  cargo test --color always --features testing
+test *args:
+  cargo test --color always --features testing {{args}}
 
 # Run unit tests
-unit-test:
-  cargo test --lib --color always --features testing
+unit-test *args:
+  cargo test --lib --color always --features testing {{args}}
 
 # Run tests (nextest)
-nextest:
-  cargo nextest run --features testing
+nextest *args:
+  cargo nextest run --features testing {{args}}
 
 # Run unit tests
-unit-nextest:
-  cargo nextest run --lib --features testing
+unit-nextest *args:
+  cargo nextest run --lib --features testing {{args}}
+
+watch_flags := '-i "target/*" -i "*.log"'
+
+# Hot Reload
+watch *args:
+  cargo watch {{watch_flags}} -x check -x "run --features development {{args}}"
+
+# Hot Reload with Testing in the Loop
+watch-test *args:
+  cargo watch {{watch_flags}} -x check -x "test --lib" -x "run --features development {{args}}"
 
 # Watch tests
-test-watch:
-  cargo watch -i "target/*" -i "*.log" -x check -x "test --features testing"
+test-watch *args:
+  cargo watch {{watch_flags}} -x check -x "test --features testing {{args}}"
 
 # Watch unit tests
-unit-test-watch:
-  cargo watch -i "target/*" -i "*.log" -x check -x "test --lib --features testing"
+unit-test-watch *args:
+  cargo watch {{watch_flags}} -x check -x "test --lib --features testing {{args}}"
 
 # Watch tests
-nextest-watch:
-  cargo watch -i "target/*" -i "*.log" -x check -x "nextest run --features testing"
+nextest-watch *args:
+  cargo watch {{watch_flags}} -x check -x "nextest run --features testing {{args}}"
 
 # Watch unit tests
-unit-nextest-watch:
-  cargo watch -i "target/*" -i "*.log" -x check -x "nextest run --lib --features testing"
+unit-nextest-watch *args:
+  cargo watch {{watch_flags}} -x check -x "nextest run --lib --features testing {{args}}"
 
 # Run coverage
 coverage:
   cargo +nightly llvm-cov
 
 # Build release
-build:
-  cargo build --release
+build *args:
+  cargo build --release {{args}}
 
 # Format + lint
-check:
+check *args:
   cargo fmt --check
-  cargo clippy
+  cargo clippy {{args}}
 
 # Format + lint strict
-check-strict:
+check-strict *args:
   cargo fmt --check
-  cargo clippy -- -D clippy::pedantic -D clippy::nursery
+  cargo clippy -- -D clippy::pedantic -D clippy::nursery {{args}}
 
 # Checking deps for vulnerabilities
-audit:
-  cargo audit
+audit *args:
+  cargo audit {{args}}
 
 # Add migration
-migrate name:
-  sqlx migrate add {{name}}
+migrate name *args:
+  sqlx migrate add {{name}} {{args}}
 
 # Reset database and reapply migrations
 reset-db:
