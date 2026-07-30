@@ -79,14 +79,14 @@ impl App {
                     .start(self.displayed_track_ids.clone(), Some(track_id));
             }
             PlaybackOutcome::PlayNext => {
-                let next_track_id = self.playback_queue.go_to_next();
+                let next_track_id = self.playback_queue.next();
 
                 if let Some(next_track_id) = next_track_id {
                     task = self.play_track(next_track_id)?;
                 }
             }
             PlaybackOutcome::PlayPrevious => {
-                let previous_track_id = self.playback_queue.go_to_previous();
+                let previous_track_id = self.playback_queue.previous();
 
                 if let Some(previous_track_id) = previous_track_id {
                     task = self.play_track(previous_track_id)?;

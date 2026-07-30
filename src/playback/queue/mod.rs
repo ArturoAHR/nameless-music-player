@@ -13,6 +13,9 @@ pub mod entry;
 mod generation;
 pub mod handler;
 
+// #[cfg(test)]
+// pub mod tests;
+
 pub use handler::Message;
 
 #[derive(Debug, Error, Clone)]
@@ -76,7 +79,12 @@ impl PlaybackQueue {
         self.entries.get(self.cursor).map(|entry| entry.track_id)
     }
 
-    pub fn peek_next(&self) -> Option<TrackId> {
+    /// Peeks the next track without
+    pub fn peek_next(&mut self) -> Option<TrackId> {
+        if self.get_remaining_tracks() <= PLAYBACK_QUEUE_LENGTH {
+            self.generate_next_entries(PLAYBACK_QUEUE_LENGTH);
+        }
+
         self.entries
             .get(self.cursor + 1)
             .map(|entry| entry.track_id)
@@ -93,8 +101,13 @@ impl PlaybackQueue {
             .map(|entry| entry.track_id)
     }
 
+    #[allow(clippy::should_implement_trait)]
     #[instrument(skip(self), ret)]
-    pub fn go_to_next(&mut self) -> Option<TrackId> {
+    pub fn next(&mut self) -> Option<TrackId> {
+        if self.get_remaining_tracks() <= PLAYBACK_QUEUE_LENGTH {
+            self.generate_next_entries(PLAYBACK_QUEUE_LENGTH);
+        }
+
         let next_track_id = self
             .entries
             .get(self.cursor + 1)
@@ -104,15 +117,11 @@ impl PlaybackQueue {
             self.cursor += 1;
         }
 
-        if self.get_remaining_tracks() <= PLAYBACK_QUEUE_LENGTH {
-            self.generate_next_entries(PLAYBACK_QUEUE_LENGTH);
-        }
-
         next_track_id
     }
 
     #[instrument(skip(self), ret)]
-    pub fn go_to_previous(&mut self) -> Option<TrackId> {
+    pub fn previous(&mut self) -> Option<TrackId> {
         if self.cursor == 0 {
             self.generate_previous_entries(PLAYBACK_QUEUE_LENGTH);
         }

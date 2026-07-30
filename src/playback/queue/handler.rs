@@ -22,7 +22,7 @@ impl App {
         ) {
             self.playback_queue.current()
         } else {
-            self.playback_queue.go_to_next()
+            self.playback_queue.next()
         };
 
         let task = if let Some(next_track_id) = next_track_id {
@@ -32,14 +32,6 @@ impl App {
 
             Task::none()
         };
-
-        // if self.playback_queue.get_remaining_tracks() <= PLAYBACK_QUEUE_LENGTH {
-        //     task = task.chain(Task::done(app::Message::PlaybackQueue(
-        //         Message::GenerateNextTracks,
-        //     )));
-        // } else {
-        //     task = task.chain(self.broadcast_queue_changed());
-        // }
 
         Ok(task)
     }
