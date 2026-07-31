@@ -554,3 +554,94 @@ fn should_peek_the_previous_track_in_the_queue_repeating_one_sequentially_withou
 
     assert_matches!(previous_track_id, Some(9));
 }
+
+#[test]
+fn should_queue_track_next() {
+    let mut queue = generate_queue(
+        (0..10).collect(),
+        None,
+        PlaybackRepeatMode::Repeat,
+        PlaybackQueueOrder::Sequential,
+    );
+
+    queue.insert_next(10);
+
+    assert_eq!(queue.next(), Some(10));
+}
+
+#[test]
+fn should_queue_several_tracks_next() {
+    let mut queue = generate_queue(
+        (0..10).collect(),
+        None,
+        PlaybackRepeatMode::Repeat,
+        PlaybackQueueOrder::Sequential,
+    );
+
+    queue.insert_next(10);
+    queue.insert_next(11);
+    queue.insert_next(12);
+
+    assert_eq!(queue.next(), Some(10));
+    assert_eq!(queue.next(), Some(11));
+    assert_eq!(queue.next(), Some(12));
+}
+
+#[test]
+fn should_queue_a_track_5_tracks_later() {
+    let mut queue = generate_queue(
+        (0..10).collect(),
+        None,
+        PlaybackRepeatMode::Repeat,
+        PlaybackQueueOrder::Sequential,
+    );
+
+    queue.insert(queue.cursor + 5, 10);
+
+    for _ in 0..4 {
+        queue.next();
+    }
+
+    assert_eq!(queue.next(), Some(10));
+}
+
+#[test]
+fn should_queue_insertion_should_happen_at_the_end_if_insert_index_exceeds_queue_entries_length() {
+    let mut queue = generate_queue(
+        (0..10).collect(),
+        None,
+        PlaybackRepeatMode::Repeat,
+        PlaybackQueueOrder::Sequential,
+    );
+
+    let original_queue_entries_length = queue.entries.len();
+
+    queue.insert(queue.entries.len() + 10, 10);
+
+    for _ in 0..original_queue_entries_length - 1 {
+        queue.next();
+    }
+
+    assert_eq!(queue.next(), Some(10));
+}
+
+#[test]
+fn should_queue_several_tracks_next_after_inserting_one_at_the_end() {
+    let mut queue = generate_queue(
+        (0..10).collect(),
+        None,
+        PlaybackRepeatMode::Repeat,
+        PlaybackQueueOrder::Sequential,
+    );
+
+    queue.insert(queue.entries.len(), 15);
+
+    queue.insert_next(10);
+    queue.insert_next(11);
+    queue.insert_next(12);
+
+    assert_eq!(queue.next(), Some(10));
+    assert_eq!(queue.next(), Some(11));
+    assert_eq!(queue.next(), Some(12));
+}
+

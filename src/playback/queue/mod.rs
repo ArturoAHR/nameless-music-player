@@ -154,14 +154,22 @@ impl PlaybackQueue {
             .insert(insert_index, PlaybackQueueEntry::user(id, track_id));
     }
 
-    /// Inserts a track id at the next position in the queue.
+    /// Inserts a queue entry at the end of of a consecutive set of user entries starting at the entry after the cursor.
     pub fn insert_next(&mut self, track_id: TrackId) {
-        let insert_index = (self.cursor + 1).min(self.entries.len());
+        let insert_index = self
+            .entries
+            .iter()
+            .enumerate()
+            .filter(|(_, entry)| matches!(entry.source, PlaybackQueueEntrySource::User))
+            .fold(self.cursor, |current_insert_index, (index, _)| {
+                if current_insert_index + 1 == index {
+                    current_insert_index.max(index)
+                } else {
+                    current_insert_index
+                }
+            });
 
-        let id = self.get_next_entry_id();
-
-        self.entries
-            .insert(insert_index, PlaybackQueueEntry::user(id, track_id));
+        self.insert(insert_index + 1, track_id);
     }
 
     /// Removes a track id from the queue at the given index, bear in mind this index

@@ -90,8 +90,6 @@ impl PlaybackQueue {
             })
             .collect();
 
-        println!("{next_entries:?}");
-
         self.entries.extend(next_entries);
     }
 
@@ -140,8 +138,6 @@ impl PlaybackQueue {
             })
             .collect();
 
-        println!("{next_entries:?}");
-
         self.entries.extend(next_entries);
     }
 
@@ -185,8 +181,6 @@ impl PlaybackQueue {
         if !previous_entries.is_empty() {
             self.cursor += previous_entries.len() + self.entries.len().min(1) - 1;
         }
-
-        println!("{previous_entries:?}");
 
         let mut entries = VecDeque::from(previous_entries);
         entries.append(&mut self.entries);
