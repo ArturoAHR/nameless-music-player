@@ -152,6 +152,10 @@ impl PlaybackQueue {
 
         self.entries
             .insert(insert_index, PlaybackQueueEntry::user(id, track_id));
+
+        if insert_index <= self.cursor {
+            self.cursor = (self.cursor + 1).min(self.entries.len().saturating_sub(1));
+        }
     }
 
     /// Inserts a queue entry at the end of of a consecutive set of user entries starting at the entry after the cursor.
@@ -226,13 +230,15 @@ impl PlaybackQueue {
             .iter()
             .enumerate()
             .filter_map(|(index, entry)| {
-                (index == self.cursor
+                (self.cursor == index
                     || matches!(entry.source, PlaybackQueueEntrySource::User)
-                        && index > self.cursor)
+                        && self.cursor < index)
                     .then_some(entry)
             })
             .copied()
             .collect();
+
+        self.set_cursor(0);
     }
 
     pub fn get_remaining_tracks(&self) -> usize {

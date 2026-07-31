@@ -646,6 +646,37 @@ fn should_queue_several_tracks_next_after_inserting_one_at_the_end() {
 }
 
 #[test]
+fn should_set_cursor() {
+    let mut queue = generate_queue(
+        (0..10).collect(),
+        None,
+        PlaybackRepeatMode::Repeat,
+        PlaybackQueueOrder::Sequential,
+    );
+
+    // sixth element of the third loop
+    queue.set_cursor(25);
+
+    assert_eq!(queue.current(), Some(5));
+}
+
+#[test]
+fn should_set_cursor_at_the_end_if_index_is_out_of_bounds() {
+    let mut queue = generate_queue(
+        (0..10).collect(),
+        None,
+        PlaybackRepeatMode::Repeat,
+        PlaybackQueueOrder::Sequential,
+    );
+
+    // sixth element of the third loop
+    queue.set_cursor(queue.entries.len() + 1);
+
+    assert_eq!(queue.current(), Some(9));
+    assert_eq!(queue.cursor, queue.entries.len() - 1);
+}
+
+#[test]
 fn should_remove_the_next_track() {
     let mut queue = generate_queue(
         (0..10).collect(),
@@ -688,6 +719,24 @@ fn should_remove_the_only_track_in_the_queue() {
 }
 
 #[test]
+fn should_remove_entry_behind_cursor() {
+    let mut queue = generate_queue(
+        (0..10).collect(),
+        None,
+        PlaybackRepeatMode::Repeat,
+        PlaybackQueueOrder::Sequential,
+    );
+
+    // sixth element of the third loop
+    queue.set_cursor(25);
+
+    queue.remove(0).unwrap();
+
+    assert_eq!(queue.current(), Some(5));
+    assert_eq!(queue.cursor, 24);
+}
+
+#[test]
 fn should_fail_to_remove_when_index_is_out_of_bounds() {
     let mut queue = generate_queue(
         (0..10).collect(),
@@ -717,7 +766,7 @@ fn should_truncate() {
 }
 
 #[test]
-fn should_truncate_without_removing_user_queued_entries() {
+fn should_truncate_without_removing_future_user_queued_entries() {
     let mut queue = generate_queue(
         (0..10).collect(),
         None,
@@ -725,7 +774,10 @@ fn should_truncate_without_removing_user_queued_entries() {
         PlaybackQueueOrder::Sequential,
     );
 
+    queue.set_cursor(25);
+
     queue.insert(queue.entries.len(), 15);
+    queue.insert(0, 16);
 
     queue.insert_next(10);
     queue.insert_next(11);
@@ -733,8 +785,57 @@ fn should_truncate_without_removing_user_queued_entries() {
 
     queue.truncate();
 
+    assert_eq!(queue.peek_previous(), Some(4));
+    assert_eq!(queue.current(), Some(5));
     assert_eq!(queue.next(), Some(10));
     assert_eq!(queue.next(), Some(11));
     assert_eq!(queue.next(), Some(12));
     assert_eq!(queue.next(), Some(15));
+    assert_eq!(queue.entries.len(), PLAYBACK_QUEUE_LENGTH + 5 + 26);
+}
+
+#[test]
+fn should_prune() {
+    let mut queue = generate_queue(
+        (0..10).collect(),
+        None,
+        PlaybackRepeatMode::Repeat,
+        PlaybackQueueOrder::Sequential,
+    );
+
+    queue.set_cursor(25);
+
+    queue.prune();
+
+    assert_eq!(queue.current(), Some(5));
+    assert_eq!(queue.entries.len(), 1);
+}
+
+#[test]
+fn should_prune_without_removing_future_user_queued_entries() {
+    let mut queue = generate_queue(
+        (0..10).collect(),
+        None,
+        PlaybackRepeatMode::Repeat,
+        PlaybackQueueOrder::Sequential,
+    );
+
+    queue.set_cursor(25);
+
+    queue.insert(queue.entries.len(), 15);
+    queue.insert(0, 16);
+
+    queue.insert_next(10);
+    queue.insert_next(11);
+    queue.insert_next(12);
+
+    queue.prune();
+
+    assert_eq!(queue.peek_previous(), Some(4));
+    assert_eq!(queue.current(), Some(5));
+    assert_eq!(queue.next(), Some(10));
+    assert_eq!(queue.next(), Some(11));
+    assert_eq!(queue.next(), Some(12));
+    assert_eq!(queue.next(), Some(15));
+    assert_eq!(queue.entries.len(), PLAYBACK_QUEUE_LENGTH * 2 + 5);
 }
