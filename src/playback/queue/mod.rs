@@ -13,8 +13,8 @@ pub mod entry;
 mod generation;
 pub mod handler;
 
-// #[cfg(test)]
-// pub mod tests;
+#[cfg(test)]
+pub mod tests;
 
 pub use handler::Message;
 
@@ -81,21 +81,25 @@ impl PlaybackQueue {
 
     /// Peeks the next track without
     pub fn peek_next(&mut self) -> Option<TrackId> {
+        let original_queue_length = self.entries.len();
+
         if self.get_remaining_tracks() <= PLAYBACK_QUEUE_LENGTH {
             self.generate_next_entries(PLAYBACK_QUEUE_LENGTH);
         }
 
         self.entries
-            .get(self.cursor + 1)
+            .get(self.cursor + original_queue_length.min(1))
             .map(|entry| entry.track_id)
     }
 
     pub fn peek_previous(&mut self) -> Option<TrackId> {
+        let original_queue_length = self.entries.len();
+
         if self.cursor == 0 {
             self.generate_previous_entries(PLAYBACK_QUEUE_LENGTH);
         }
 
-        let previous_track_index = self.cursor.checked_sub(1)?;
+        let previous_track_index = self.cursor.checked_sub(original_queue_length.min(1))?;
         self.entries
             .get(previous_track_index)
             .map(|entry| entry.track_id)

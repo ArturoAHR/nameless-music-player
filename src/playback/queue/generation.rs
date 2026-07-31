@@ -12,18 +12,27 @@ use crate::{
     track::models::TrackId,
 };
 
+pub enum GenerationDirection {
+    Next,
+    Previous,
+}
+
 impl PlaybackQueue {
-    pub fn get_track_pool_position(&self) -> usize {
-        let mut played_system_queue_entries = self
+    /// Gets the track pool position for sequential generation depending on the direction we are generating:
+    ///
+    /// - If we are generating the next tracks, we get the last track pool system entry in the queue.
+    /// - If we are generating the previous tracks, we get the first track pool system entry in the queue
+    pub fn get_track_pool_position(&self, generation_direction: GenerationDirection) -> usize {
+        let base_played_system_queue_entries = self
             .entries
             .iter()
-            .enumerate()
-            .filter_map(|(index, entry)| {
-                (matches!(entry.source, PlaybackQueueEntrySource::System) && index <= self.cursor)
-                    .then_some(entry)
-            })
-            .map(|entry| entry.track_id)
-            .rev();
+            .filter(|entry| matches!(entry.source, PlaybackQueueEntrySource::System))
+            .map(|entry| entry.track_id);
+
+        let mut played_system_queue_entries = match generation_direction {
+            GenerationDirection::Next => Either::Left(base_played_system_queue_entries.rev()),
+            GenerationDirection::Previous => Either::Right(base_played_system_queue_entries),
+        };
 
         loop {
             let Some(played_system_queue_entries) = played_system_queue_entries.next() else {
@@ -38,7 +47,7 @@ impl PlaybackQueue {
                 continue;
             };
 
-            break position + 1;
+            break position;
         }
     }
 
@@ -57,7 +66,7 @@ impl PlaybackQueue {
     }
 
     pub fn generate_next_entries_sequentially(&mut self, amount: usize) {
-        let track_pool_position = self.get_track_pool_position();
+        let track_pool_position = self.get_track_pool_position(GenerationDirection::Next);
 
         let track_pool = if self.repeat_mode.is_repeating() {
             Either::Left(self.track_pool.iter().cycle())
@@ -67,7 +76,7 @@ impl PlaybackQueue {
 
         #[allow(clippy::needless_collect)]
         let next_track_ids: Vec<TrackId> = track_pool
-            .skip(track_pool_position)
+            .skip(track_pool_position + self.entries.len().min(1))
             .take(amount)
             .copied()
             .collect();
@@ -80,6 +89,8 @@ impl PlaybackQueue {
                 PlaybackQueueEntry::system(id, track_id)
             })
             .collect();
+
+        println!("{next_entries:?}");
 
         self.entries.extend(next_entries);
     }
@@ -129,6 +140,8 @@ impl PlaybackQueue {
             })
             .collect();
 
+        println!("{next_entries:?}");
+
         self.entries.extend(next_entries);
     }
 
@@ -137,7 +150,14 @@ impl PlaybackQueue {
             return;
         }
 
-        let track_pool_position = self.get_track_pool_position();
+        let track_pool_position = self.get_track_pool_position(GenerationDirection::Previous);
+
+        let track_pool_position = match track_pool_position.checked_sub(1) {
+            Some(position) => position,
+            // Wrap around if the repeat mode is a repeating one
+            None if self.repeat_mode.is_repeating() => self.track_pool.len().saturating_sub(1),
+            None => return,
+        };
 
         let track_pool = if self.repeat_mode.is_repeating() {
             Either::Left(self.track_pool.iter().rev().cycle())
@@ -162,7 +182,11 @@ impl PlaybackQueue {
             .rev()
             .collect();
 
-        self.cursor += previous_entries.len();
+        if !previous_entries.is_empty() {
+            self.cursor += previous_entries.len() + self.entries.len().min(1) - 1;
+        }
+
+        println!("{previous_entries:?}");
 
         let mut entries = VecDeque::from(previous_entries);
         entries.append(&mut self.entries);
