@@ -274,7 +274,9 @@ impl PlaybackQueue {
             }
         }
 
-        self.generate_next_entries(PLAYBACK_QUEUE_LENGTH);
+        if self.get_remaining_tracks() <= PLAYBACK_QUEUE_LENGTH {
+            self.generate_next_entries(PLAYBACK_QUEUE_LENGTH);
+        }
     }
 }
 
