@@ -1,5 +1,4 @@
 use pretty_assertions::assert_eq;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rustc_hash::FxHashSet;
 
 use crate::assert_matches;
@@ -696,6 +695,20 @@ fn should_remove_the_next_track() {
 }
 
 #[test]
+fn should_remove_the_next_track_relative_to_cursor() {
+    let mut queue = generate_queue(
+        (0..10).collect(),
+        None,
+        PlaybackRepeatMode::Repeat,
+        PlaybackQueueOrder::Sequential,
+    );
+
+    queue.remove_relative_to_cursor(1).unwrap();
+
+    assert_eq!(queue.next(), Some(2));
+}
+
+#[test]
 fn should_remove_the_current_track() {
     let mut queue = generate_queue(
         (0..10).collect(),
@@ -705,6 +718,20 @@ fn should_remove_the_current_track() {
     );
 
     queue.remove(queue.cursor).unwrap();
+
+    assert_eq!(queue.current(), Some(1));
+}
+
+#[test]
+fn should_remove_relative_to_cursor_the_current_track() {
+    let mut queue = generate_queue(
+        (0..10).collect(),
+        None,
+        PlaybackRepeatMode::Repeat,
+        PlaybackQueueOrder::Sequential,
+    );
+
+    queue.remove_relative_to_cursor(0).unwrap();
 
     assert_eq!(queue.current(), Some(1));
 }
@@ -851,10 +878,10 @@ fn should_prune_without_removing_future_user_queued_entries() {
 
 #[test]
 fn should_not_repeat_tracks_when_shuffling() {
-    (0..25).into_par_iter().for_each(|_| {
+    for _ in 0..25 {
         let mut queue = generate_queue(
             (0..1000).collect(),
-            None,
+            Some(0),
             PlaybackRepeatMode::NoRepeat,
             PlaybackQueueOrder::Shuffle,
         );
@@ -874,7 +901,7 @@ fn should_not_repeat_tracks_when_shuffling() {
         }
 
         assert_eq!(queue.next(), None);
-    });
+    }
 }
 
 #[test]
@@ -907,5 +934,280 @@ fn should_not_repeat_tracks_when_shuffling_with_repeats_until_the_track_has_not_
             "Repeated track id: {next_track_id}"
         );
         played_tracks.insert(next_track_id);
+    }
+}
+
+#[test]
+fn should_transition_to_sequential_order_properly() {
+    let mut queue = generate_queue(
+        (0..100).collect(),
+        None,
+        PlaybackRepeatMode::NoRepeat,
+        PlaybackQueueOrder::Shuffle,
+    );
+
+    let next_shuffled_track_id = queue.next().unwrap();
+
+    queue.cycle_queue_order();
+
+    for index in (0..next_shuffled_track_id).rev() {
+        let previous_sequential_track_id = queue.previous().unwrap();
+
+        assert_eq!(index, previous_sequential_track_id);
+    }
+
+    assert_eq!(queue.current(), Some(0));
+
+    for index in 1..queue.entries.len() - 1 {
+        let next_sequential_track_id = queue.next().unwrap();
+
+        assert_eq!(index, next_sequential_track_id as usize);
+    }
+}
+
+#[test]
+fn should_transition_to_shuffled_order_properly() {
+    let mut queue = generate_queue(
+        (0..100).collect(),
+        None,
+        PlaybackRepeatMode::NoRepeat,
+        PlaybackQueueOrder::Sequential,
+    );
+
+    queue.next().unwrap();
+
+    queue.cycle_queue_order();
+
+    // Previous tracks generation is not supported for shuffle.
+    assert_eq!(queue.peek_previous(), None);
+
+    let mut played_tracks = FxHashSet::default();
+
+    for index in 0..queue.track_pool.len() - 1 {
+        let next_track_id = queue.next().unwrap_or_else(|| {
+            panic!("Shuffled queue ran out of tracks before it should at index {index}")
+        });
+
+        assert!(
+            !played_tracks.contains(&next_track_id),
+            "Repeated track id: {next_track_id}"
+        );
+        played_tracks.insert(next_track_id);
+    }
+}
+
+#[test]
+fn should_transition_to_a_repeating_repeat_mode_properly_with_sequential_order() {
+    let mut queue = generate_queue(
+        (0..100).collect(),
+        None,
+        PlaybackRepeatMode::NoRepeat,
+        PlaybackQueueOrder::Sequential,
+    );
+
+    for _ in 0..queue.track_pool.len() - 1 {
+        queue.next().unwrap();
+    }
+
+    assert_eq!(queue.next(), None);
+
+    assert_eq!(queue.entries.len(), queue.track_pool.len());
+    queue.cycle_repeat_mode();
+    assert_eq!(
+        queue.entries.len(),
+        PLAYBACK_QUEUE_LENGTH + 1,
+        "Repeating mode transition did not prune queue"
+    );
+
+    assert_eq!(queue.next(), Some(0));
+}
+
+#[test]
+fn should_transition_to_a_repeating_repeat_mode_properly_with_shuffled_order() {
+    let mut queue = generate_queue(
+        (0..100).collect(),
+        None,
+        PlaybackRepeatMode::NoRepeat,
+        PlaybackQueueOrder::Shuffle,
+    );
+
+    for _ in 0..queue.track_pool.len() - 1 {
+        queue.next().unwrap();
+    }
+
+    assert_eq!(queue.next(), None);
+
+    assert_eq!(queue.entries.len(), queue.track_pool.len());
+    queue.cycle_repeat_mode();
+    assert_eq!(
+        queue.entries.len(),
+        queue.track_pool.len() + PLAYBACK_QUEUE_LENGTH,
+        "Repeating mode transition did not truncate queue"
+    );
+
+    assert!(
+        queue.next().is_some(),
+        "Queue didn't generate additional tracks after transition to repeating repeat mode"
+    );
+}
+
+#[test]
+fn should_transition_to_a_non_repeating_repeat_mode_properly_with_sequential_order() {
+    let mut queue = generate_queue(
+        (0..100).collect(),
+        None,
+        PlaybackRepeatMode::Repeat,
+        PlaybackQueueOrder::Sequential,
+    );
+
+    for _ in 0..queue.track_pool.len() - 1 {
+        queue.next().unwrap();
+    }
+
+    assert!(queue.peek_next().is_some());
+
+    assert_eq!(
+        queue.entries.len(),
+        queue.track_pool.len() + PLAYBACK_QUEUE_LENGTH + 1
+    );
+    queue.cycle_repeat_mode();
+    assert_eq!(
+        queue.entries.len(),
+        queue.track_pool.len() + PLAYBACK_QUEUE_LENGTH + 1,
+        "Transitioning from Repeat to RepeatOne shouldn't affect the queue entries"
+    );
+    queue.cycle_repeat_mode();
+    assert_eq!(
+        queue.entries.len(),
+        1,
+        "Repeating mode transition didn't prune queue"
+    );
+
+    assert!(
+        queue.next().is_none(),
+        "Queue generated tracks when it shouldn't have"
+    );
+
+    for _ in 0..queue.track_pool.len() - 1 {
+        queue.previous().unwrap();
+    }
+
+    assert!(
+        queue.previous().is_none(),
+        "Queue generated previous tracks when it shouldn't have"
+    );
+}
+
+#[test]
+fn should_transition_to_a_non_repeating_repeat_mode_properly_with_shuffled_order() {
+    let mut queue = generate_queue(
+        (0..100).collect(),
+        None,
+        PlaybackRepeatMode::Repeat,
+        PlaybackQueueOrder::Shuffle,
+    );
+
+    for _ in 0..queue.track_pool.len() - 1 {
+        queue.next().unwrap();
+    }
+
+    assert!(queue.next().is_some());
+
+    assert_eq!(
+        queue.entries.len(),
+        queue.track_pool.len() + PLAYBACK_QUEUE_LENGTH + 1
+    );
+    queue.cycle_repeat_mode();
+    assert_eq!(
+        queue.entries.len(),
+        queue.track_pool.len() + PLAYBACK_QUEUE_LENGTH + 1,
+        "Transitioning from Repeat to RepeatOne shouldn't affect the queue entries"
+    );
+    queue.cycle_repeat_mode();
+    assert_eq!(
+        queue.entries.len(),
+        queue.track_pool.len() + 1,
+        "Repeating mode transition didn't truncate queue"
+    );
+
+    assert!(
+        queue.next().is_none(),
+        "Queue generated tracks when it shouldn't have"
+    );
+
+    for _ in 0..queue.entries.len() - 1 {
+        queue.previous().unwrap();
+    }
+
+    assert!(
+        queue.previous().is_none(),
+        "Queue generated previous tracks when it shouldn't have"
+    );
+}
+
+#[test]
+fn should_not_repeat_user_queued_tracks_when_shuffling_without_repeats() {
+    for _ in 0..25 {
+        let mut queue = generate_queue(
+            (0..100).collect(),
+            None,
+            PlaybackRepeatMode::NoRepeat,
+            PlaybackQueueOrder::Shuffle,
+        );
+
+        queue.truncate();
+        for index in 1..10 {
+            queue.insert_next(index);
+        }
+
+        for _ in 0..10 {
+            queue.next().unwrap();
+        }
+
+        for _ in 0..queue.track_pool.len() - 11 {
+            assert!(queue.next().unwrap() >= 10, "Repeated user queued tracks");
+        }
+
+        assert_eq!(queue.next(), None);
+    }
+}
+
+#[test]
+fn should_not_repeat_user_queued_tracks_when_shuffling_with_repeats_until_entries_are_past_threshold()
+ {
+    for _ in 0..25 {
+        let mut queue = generate_queue(
+            (0..1000).collect(),
+            None,
+            PlaybackRepeatMode::Repeat,
+            PlaybackQueueOrder::Shuffle,
+        );
+
+        queue.truncate();
+        for index in 1..100 {
+            queue.insert_next(index);
+        }
+
+        let mut played_tracks = FxHashSet::default();
+
+        let no_repeat_threshold = queue.track_pool.len() / 2;
+
+        for index in 0..queue.track_pool.len() * 2 {
+            if index >= no_repeat_threshold {
+                let track_id_that_can_repeat = queue.entries[index - no_repeat_threshold];
+
+                played_tracks.remove(&track_id_that_can_repeat.track_id);
+            }
+
+            let next_track_id = queue.next().unwrap_or_else(|| {
+                panic!("Repeated Shuffled queue ran out of tracks at index {index}")
+            });
+
+            assert!(
+                !played_tracks.contains(&next_track_id),
+                "Repeated track id: {next_track_id}"
+            );
+            played_tracks.insert(next_track_id);
+        }
     }
 }
