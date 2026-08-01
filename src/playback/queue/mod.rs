@@ -72,6 +72,8 @@ impl PlaybackQueue {
             self.entries
                 .push_back(PlaybackQueueEntry::system(id, current_playing_track_id));
         }
+
+        self.generate_next_entries(PLAYBACK_QUEUE_LENGTH);
     }
 
     #[instrument(skip(self), ret)]
@@ -195,6 +197,10 @@ impl PlaybackQueue {
 
         // Guards against cursor falling outside of queue entries.
         self.cursor = self.cursor.min(self.entries.len().saturating_sub(1));
+
+        if self.get_remaining_tracks() <= PLAYBACK_QUEUE_LENGTH {
+            self.generate_next_entries(PLAYBACK_QUEUE_LENGTH);
+        }
 
         Ok(())
     }

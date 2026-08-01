@@ -21,7 +21,7 @@ fn generate_queue(
             assert_eq!(queue.current(), Some(track_id));
         }
         None => {
-            assert_eq!(queue.current(), None);
+            assert_eq!(queue.current(), Some(queue.track_pool[0]));
         }
     }
 
@@ -483,7 +483,7 @@ fn should_peek_the_next_track_in_the_queue_sequentially_without_a_starting_track
 
     let next_track_id = queue.peek_next();
 
-    assert_matches!(next_track_id, Some(0));
+    assert_matches!(next_track_id, Some(1));
 }
 
 #[test]
@@ -674,7 +674,10 @@ fn should_set_cursor_at_the_end_if_index_is_out_of_bounds() {
     // sixth element of the third loop
     queue.set_cursor(queue.entries.len() + 1);
 
-    assert_eq!(queue.current(), Some(9));
+    assert_eq!(
+        queue.current(),
+        Some(queue.entries[queue.entries.len() - 1].track_id)
+    );
     assert_eq!(queue.cursor, queue.entries.len() - 1);
 }
 
@@ -707,7 +710,7 @@ fn should_remove_the_current_track() {
 }
 
 #[test]
-fn should_remove_the_only_track_in_the_queue() {
+fn should_remove_the_only_track_in_the_queue_and_restart_the_queue() {
     let mut queue = generate_queue(
         (0..10).collect(),
         Some(0),
@@ -715,9 +718,13 @@ fn should_remove_the_only_track_in_the_queue() {
         PlaybackQueueOrder::Sequential,
     );
 
+    queue.set_cursor(queue.entries.len() - 1);
+
+    queue.prune();
+
     queue.remove(queue.cursor).unwrap();
 
-    assert_eq!(queue.current(), None);
+    assert_eq!(queue.current(), Some(0));
 }
 
 #[test]
