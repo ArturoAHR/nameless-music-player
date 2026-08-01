@@ -1,4 +1,6 @@
 use pretty_assertions::assert_eq;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rustc_hash::FxHashSet;
 
 use crate::assert_matches;
 
@@ -838,4 +840,65 @@ fn should_prune_without_removing_future_user_queued_entries() {
     assert_eq!(queue.next(), Some(12));
     assert_eq!(queue.next(), Some(15));
     assert_eq!(queue.entries.len(), PLAYBACK_QUEUE_LENGTH * 2 + 5);
+}
+
+#[test]
+fn should_not_repeat_tracks_when_shuffling() {
+    (0..25).into_par_iter().for_each(|_| {
+        let mut queue = generate_queue(
+            (0..1000).collect(),
+            None,
+            PlaybackRepeatMode::NoRepeat,
+            PlaybackQueueOrder::Shuffle,
+        );
+
+        let mut played_tracks = FxHashSet::default();
+
+        for index in 0..queue.track_pool.len() - 1 {
+            let next_track_id = queue.next().unwrap_or_else(|| {
+                panic!("Shuffled queue ran out of tracks before it should at index {index}")
+            });
+
+            assert!(
+                !played_tracks.contains(&next_track_id),
+                "Repeated track id: {next_track_id}"
+            );
+            played_tracks.insert(next_track_id);
+        }
+
+        assert_eq!(queue.next(), None);
+    });
+}
+
+#[test]
+fn should_not_repeat_tracks_when_shuffling_with_repeats_until_the_track_has_not_been_played_for_half_of_the_track_pool_length()
+ {
+    let mut queue = generate_queue(
+        (0..1000).collect(),
+        None,
+        PlaybackRepeatMode::Repeat,
+        PlaybackQueueOrder::Shuffle,
+    );
+
+    let mut played_tracks = FxHashSet::default();
+
+    let no_repeat_threshold = queue.track_pool.len() / 2;
+
+    for index in 0..queue.track_pool.len() * 10 {
+        if index >= no_repeat_threshold {
+            let track_id_that_can_repeat = queue.entries[index - no_repeat_threshold];
+
+            played_tracks.remove(&track_id_that_can_repeat.track_id);
+        }
+
+        let next_track_id = queue.next().unwrap_or_else(|| {
+            panic!("Repeated Shuffled queue ran out of tracks at index {index}")
+        });
+
+        assert!(
+            !played_tracks.contains(&next_track_id),
+            "Repeated track id: {next_track_id}"
+        );
+        played_tracks.insert(next_track_id);
+    }
 }
