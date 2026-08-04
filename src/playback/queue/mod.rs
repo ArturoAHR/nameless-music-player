@@ -212,6 +212,10 @@ impl PlaybackQueue {
 
     pub fn set_cursor(&mut self, cursor: usize) {
         self.cursor = cursor.min(self.entries.len().saturating_sub(1));
+
+        if self.get_remaining_tracks() <= PLAYBACK_QUEUE_LENGTH {
+            self.generate_next_entries(PLAYBACK_QUEUE_LENGTH);
+        }
     }
 
     /// Removes all upcoming system entries from the queue
@@ -243,7 +247,7 @@ impl PlaybackQueue {
             .copied()
             .collect();
 
-        self.set_cursor(0);
+        self.cursor = 0;
     }
 
     pub fn get_remaining_tracks(&self) -> usize {

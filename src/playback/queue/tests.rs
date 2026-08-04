@@ -662,7 +662,7 @@ fn should_set_cursor() {
 }
 
 #[test]
-fn should_set_cursor_at_the_end_if_index_is_out_of_bounds() {
+fn should_set_cursor_at_the_end_if_index_is_out_of_bounds_and_generate_more_entries() {
     let mut queue = generate_queue(
         (0..10).collect(),
         None,
@@ -677,7 +677,8 @@ fn should_set_cursor_at_the_end_if_index_is_out_of_bounds() {
         queue.current(),
         Some(queue.entries[queue.entries.len() - 1].track_id)
     );
-    assert_eq!(queue.cursor, queue.entries.len() - 1);
+    assert_eq!(queue.cursor, 50);
+    assert_eq!(queue.entries.len(), 101);
 }
 
 #[test]
