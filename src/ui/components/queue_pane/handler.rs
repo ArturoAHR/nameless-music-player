@@ -20,9 +20,9 @@ impl App {
         let (task, outcomes) = self.queue_pane.update(event, &self.playback_queue);
         let component_task = task.map(app::Message::QueuePane);
 
-        if outcomes.len() == 0 {
+        if outcomes.is_empty() {
             return component_task;
-        };
+        }
 
         let mut tasks = vec![component_task];
 
