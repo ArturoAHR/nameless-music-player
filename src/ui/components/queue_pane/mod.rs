@@ -76,13 +76,30 @@ impl QueuePane {
         tracks: &'a FxHashMap<TrackId, Track>,
         playback_queue: &'a PlaybackQueue,
     ) -> Element<'a, Message, Theme, Renderer> {
+        let queue_entries: Vec<&PlaybackQueueEntry> = playback_queue
+            .entries
+            .iter()
+            .skip(playback_queue.cursor)
+            .take(PLAYBACK_QUEUE_LENGTH)
+            .collect();
+
+        let queue_entry_positions: FxHashMap<PlaybackQueueEntryId, usize> = queue_entries
+            .iter()
+            .enumerate()
+            .map(|(index, &entry)| (entry.id, index))
+            .collect();
+
+        let first_queue_entry_id = queue_entries
+            .first()
+            .map(|entry| entry.id)
+            .unwrap_or_default();
+
         let columns = vec![
             column(
                 QueueTableColumn::NowPlaying,
                 None,
                 move |entry: &PlaybackQueueEntry| {
-                    // TODO: Properly derive queue position
-                    if entry.track_id == 0 {
+                    if entry.id == first_queue_entry_id {
                         icon(icons::PLAY).into()
                     } else {
                         Space::new().into()
@@ -93,7 +110,15 @@ impl QueuePane {
             column(
                 QueueTableColumn::TrackNumber,
                 Some(text("#").into()),
-                |_entry: &PlaybackQueueEntry| text("#"),
+                move |entry: &PlaybackQueueEntry| {
+                    let queue_entry_position = queue_entry_positions
+                        .get(&entry.id)
+                        .copied()
+                        .unwrap_or_default()
+                        + 1;
+
+                    text(format!("{queue_entry_position}."))
+                },
             )
             .width(35.0),
             column(
@@ -125,13 +150,6 @@ impl QueuePane {
             .width(200.0)
             .resizable(true),
         ];
-
-        let queue_entries = playback_queue
-            .entries
-            .iter()
-            .skip(playback_queue.cursor)
-            .take(PLAYBACK_QUEUE_LENGTH)
-            .collect();
 
         container(
             table(columns, queue_entries)

@@ -42,7 +42,6 @@ pub struct PlaybackQueue {
     pub order: PlaybackQueueOrder,
 }
 
-// TODO: Add unit tests
 impl PlaybackQueue {
     pub fn new() -> Self {
         Self {
