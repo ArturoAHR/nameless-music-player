@@ -26,6 +26,7 @@ pub enum PlaybackOutcome {
     },
     PlayNext,
     PlayPrevious,
+    PlayQueueEntry(u64),
     CycleRepeatMode,
     CycleOrder,
 }
@@ -90,6 +91,20 @@ impl App {
 
                 if let Some(previous_track_id) = previous_track_id {
                     task = self.play_track(previous_track_id)?;
+                }
+            }
+            PlaybackOutcome::PlayQueueEntry(entry_id) => {
+                if let Some((queue_entry_index, playback_queue_entry_track_id)) = self
+                    .playback_queue
+                    .entries
+                    .iter()
+                    .enumerate()
+                    .find(|(_, entry)| entry.id == entry_id)
+                    .map(|(index, entry)| (index, entry.track_id))
+                {
+                    self.playback_queue.set_cursor(queue_entry_index);
+
+                    task = self.play_track(playback_queue_entry_track_id)?;
                 }
             }
             PlaybackOutcome::CycleRepeatMode => {

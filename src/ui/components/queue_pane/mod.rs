@@ -9,6 +9,7 @@ use tracing::instrument;
 use crate::{
     constants::PLAYBACK_QUEUE_LENGTH,
     event::Event,
+    outcome::PlaybackOutcome,
     playback::queue::{
         PlaybackQueue,
         entry::{PlaybackQueueEntry, PlaybackQueueEntryId},
@@ -45,17 +46,23 @@ pub enum Message {
 }
 
 #[derive(Debug, Clone)]
-pub enum Outcome {}
+pub enum Outcome {
+    Playback(PlaybackOutcome),
+}
 
 impl QueuePane {
     #[instrument(skip(self), level = "debug")]
-    pub fn update(&mut self, message: Message) -> (Task<Message>, Vec<Outcome>) {
+    pub fn update(
+        &mut self,
+        message: Message,
+        playback_queue: &PlaybackQueue,
+    ) -> (Task<Message>, Vec<Outcome>) {
         let task = Task::none();
-        let outcomes = Vec::new();
+        let mut outcomes = Vec::new();
 
         match message {
-            Message::TrackRowDoubleClicked(_queue_entry) => {
-                // TODO: Implement playing moving ahead in the queue.
+            Message::TrackRowDoubleClicked(entry_id) => {
+                outcomes.push(Outcome::Playback(PlaybackOutcome::PlayQueueEntry(entry_id)));
             }
             Message::TrackRowSelected(selected_entries) => {
                 self.selected_entries = selected_entries;
