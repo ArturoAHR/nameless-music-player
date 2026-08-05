@@ -1,7 +1,8 @@
 use iced::{
     Element, Length, Renderer, Task, alignment,
-    widget::{Space, container, text},
+    widget::{Space, button, column, container, text},
 };
+use iced_aw::ContextMenu;
 use iced_palace::widget::ellipsized_text;
 use rustc_hash::{FxHashMap, FxHashSet};
 use tracing::instrument;
@@ -11,11 +12,11 @@ use crate::{
     outcome::PlaybackOutcome,
     track::models::{Track, TrackId},
     ui::{
-        theme::Theme,
+        theme::{Theme, catalog},
         utils::label::format_duration,
         widgets::{
             icons::{self, icon},
-            table::{column, table},
+            table::{self, table},
         },
     },
 };
@@ -89,7 +90,7 @@ impl MainPane {
         let current_playing_track_id = current_playing_track_id.copied().unwrap_or(-1);
 
         let columns = vec![
-            column(TrackTableColumn::NowPlaying, None, move |track: &Track| {
+            table::column(TrackTableColumn::NowPlaying, None, move |track: &Track| {
                 if track.id == current_playing_track_id {
                     icon(icons::PLAY).into()
                 } else {
@@ -97,7 +98,7 @@ impl MainPane {
                 }
             })
             .width(30.0),
-            column(
+            table::column(
                 TrackTableColumn::Artist,
                 Some(text("Artist").into()),
                 |track: &Track| {
@@ -107,7 +108,7 @@ impl MainPane {
             )
             .width(200.0)
             .resizable(true),
-            column(
+            table::column(
                 TrackTableColumn::Title,
                 Some(text("Title").into()),
                 |track: &Track| {
@@ -117,7 +118,7 @@ impl MainPane {
             )
             .width(200.0)
             .resizable(true),
-            column(
+            table::column(
                 TrackTableColumn::Duration,
                 Some(text("Duration").into()),
                 |track: &Track| {
@@ -132,7 +133,7 @@ impl MainPane {
             .align_x(alignment::Horizontal::Right),
         ];
 
-        container(
+        container(ContextMenu::new(
             table(
                 columns,
                 displayed_track_ids
@@ -144,7 +145,17 @@ impl MainPane {
             .on_row_select(Message::TrackRowSelected)
             .on_row_double_click(Message::TrackRowDoubleClicked)
             .on_header_cell_click(Message::ColumnHeaderCellClicked),
-        )
+            || {
+                if self.selected_track_ids.is_empty() {
+                    Space::new().into()
+                } else {
+                    container(column![Space::new().width(100.0).height(100.0)])
+                        .padding(4.0)
+                        .style(catalog::container::context_menu)
+                        .into()
+                }
+            },
+        ))
         .height(Length::Fill)
         .width(Length::Fill)
         .style(|theme: &Theme| container::Style {
