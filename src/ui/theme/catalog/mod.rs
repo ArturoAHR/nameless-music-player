@@ -1,6 +1,7 @@
 pub mod application;
 pub mod button;
 pub mod container;
+pub mod context_menu;
 pub mod menu_bar;
 pub mod scrollable;
 pub mod slider;
