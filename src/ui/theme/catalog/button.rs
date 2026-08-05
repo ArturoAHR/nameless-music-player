@@ -1,9 +1,10 @@
 use iced::{
-    Border,
+    Background, Border,
+    border::Radius,
     widget::button::{Catalog, Status, Style},
 };
 
-use crate::ui::theme::Theme;
+use crate::ui::theme::{Theme, color::lighten};
 
 pub type StyleFn<'a> = Box<dyn Fn(&Theme, Status) -> Style + 'a>;
 
@@ -34,5 +35,28 @@ impl Catalog for Theme {
 
     fn style(&self, class: &Self::Class<'_>, status: Status) -> Style {
         class(self, status)
+    }
+}
+
+pub fn menu_option(theme: &Theme, status: Status) -> Style {
+    let background: Option<Background> = match status {
+        Status::Active | Status::Disabled => None,
+        Status::Pressed => Some(lighten(theme.palette.hover, 0.1).into()),
+        Status::Hovered => Some(theme.palette.hover.into()),
+    };
+
+    let text_color = match status {
+        Status::Active | Status::Hovered | Status::Pressed => theme.palette.text,
+        Status::Disabled => theme.palette.text_muted,
+    };
+
+    Style {
+        background,
+        text_color,
+        border: Border {
+            radius: Radius::from(theme.sizes.border.radius_sm),
+            ..Border::default()
+        },
+        ..Style::default()
     }
 }

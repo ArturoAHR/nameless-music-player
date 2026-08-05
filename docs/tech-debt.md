@@ -4,4 +4,5 @@
 
 ## UI Theme
 
-- Add shadow sizing and palette values
+- Add shadow sizing and palette values.
+- Add sizing for 6.0 pixels.

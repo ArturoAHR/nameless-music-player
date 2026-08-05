@@ -1,6 +1,6 @@
 use iced::{
     Element, Length, Renderer, Task, alignment,
-    widget::{Space, button, column, container, text},
+    widget::{Space, column, container, text},
 };
 use iced_aw::ContextMenu;
 use iced_palace::widget::ellipsized_text;
@@ -16,6 +16,7 @@ use crate::{
         utils::label::format_duration,
         widgets::{
             icons::{self, icon},
+            menu::menu_option,
             table::{self, table},
         },
     },
@@ -26,15 +27,14 @@ pub mod handler;
 #[derive(Debug, Default)]
 pub struct MainPane {
     pub selected_track_ids: FxHashSet<i64>,
-    pub displayed_track_ids: Vec<TrackId>,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    SetDisplayedTracks(Vec<TrackId>),
     TrackRowDoubleClicked(TrackId),
     TrackRowSelected(FxHashSet<TrackId>),
     ColumnHeaderCellClicked(TrackTableColumn),
+    QueueNext,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -55,14 +55,15 @@ pub struct MainPaneUpdateContext {}
 
 impl MainPane {
     #[instrument(skip(self), level = "debug")]
-    pub fn update(&mut self, event: Message) -> (Task<Message>, Vec<Outcome>) {
+    pub fn update(
+        &mut self,
+        event: Message,
+        displayed_track_ids: &Vec<TrackId>,
+    ) -> (Task<Message>, Vec<Outcome>) {
         let task = Task::none();
         let mut outcomes = Vec::new();
 
         match event {
-            Message::SetDisplayedTracks(displayed_track_ids) => {
-                self.displayed_track_ids = displayed_track_ids;
-            }
             Message::TrackRowDoubleClicked(track_id) => {
                 outcomes.push(Outcome::Playback(PlaybackOutcome::StartQueue(track_id)));
             }
@@ -70,6 +71,19 @@ impl MainPane {
                 self.selected_track_ids = selected_track_ids.into_iter().collect();
             }
             Message::ColumnHeaderCellClicked(_column_id) => {}
+            Message::QueueNext => {
+                if !self.selected_track_ids.is_empty() {
+                    let queued_track_ids = displayed_track_ids
+                        .iter()
+                        .filter(|track_id| self.selected_track_ids.contains(track_id))
+                        .copied()
+                        .collect();
+
+                    outcomes.push(Outcome::Playback(PlaybackOutcome::QueueNext(
+                        queued_track_ids,
+                    )));
+                }
+            }
         }
 
         (task, outcomes)
@@ -149,10 +163,17 @@ impl MainPane {
                 if self.selected_track_ids.is_empty() {
                     Space::new().into()
                 } else {
-                    container(column![Space::new().width(100.0).height(100.0)])
-                        .padding(4.0)
-                        .style(catalog::container::context_menu)
-                        .into()
+                    container(
+                        column![
+                            menu_option("Queue Next", Some(Message::QueueNext)),
+                            menu_option("Tag Selection", None)
+                        ]
+                        .width(Length::Fill),
+                    )
+                    .width(180.0)
+                    .padding(6.0)
+                    .style(catalog::container::context_menu)
+                    .into()
                 }
             },
         ))

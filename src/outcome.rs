@@ -4,7 +4,7 @@ use tracing::instrument;
 use crate::{
     app::{App, Message},
     error::AppError,
-    playback::controller::PlaybackControllerStatus,
+    playback::{controller::PlaybackControllerStatus, queue::entry::PlaybackQueueEntryId},
     track::models::TrackId,
 };
 
@@ -26,9 +26,10 @@ pub enum PlaybackOutcome {
     },
     PlayNext,
     PlayPrevious,
-    PlayQueueEntry(u64),
+    PlayQueueEntry(PlaybackQueueEntryId),
     CycleRepeatMode,
     CycleOrder,
+    QueueNext(Vec<TrackId>),
 }
 
 impl App {
@@ -112,6 +113,18 @@ impl App {
             }
             PlaybackOutcome::CycleOrder => {
                 self.playback_queue.cycle_queue_order();
+            }
+            PlaybackOutcome::QueueNext(queued_track_ids) => {
+                for queued_track_id in queued_track_ids {
+                    if self.playback_queue.entries.is_empty() {
+                        self.playback_queue
+                            .start(self.displayed_track_ids.clone(), Some(queued_track_id));
+
+                        self.current_playing_track_id = Some(queued_track_id);
+                    } else {
+                        self.playback_queue.insert_next(queued_track_id);
+                    }
+                }
             }
         }
 
