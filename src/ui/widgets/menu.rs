@@ -1,7 +1,10 @@
-use iced::{widget::button, Element, Renderer};
-use iced_aw::{menu::Item, Menu, MenuBar};
+use iced::{
+    Element, Length, Renderer,
+    widget::{Button, button, text},
+};
+use iced_aw::{Menu, MenuBar, menu::Item};
 
-use crate::ui::theme::Theme;
+use crate::ui::theme::{Theme, catalog};
 
 pub type DropdownMenuToggle<'a, M> = MenuBar<'a, M, Theme, Renderer>;
 pub type DropdownMenuItem<'a, M> = Item<'a, M, Theme, Renderer>;
@@ -51,4 +54,17 @@ pub fn dropdown_menu_grouping_option<'a, M: Clone + 'a>(
     submenu: DropdownMenu<'a, M>,
 ) -> DropdownMenuItem<'a, M> {
     Item::with_menu(button(label), submenu)
+}
+
+pub fn menu_option<'a, Message>(
+    text_label: &'static str,
+    on_press: Option<Message>,
+) -> Button<'a, Message, Theme, Renderer>
+where
+    Message: Clone + 'a,
+{
+    button(text(text_label))
+        .on_press_maybe(on_press)
+        .width(Length::Fill)
+        .style(catalog::button::menu_option)
 }

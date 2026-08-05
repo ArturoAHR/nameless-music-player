@@ -22,7 +22,7 @@ impl App {
     }
 
     pub fn handle_main_pane(&mut self, message: Message) -> Task<app::Message> {
-        let (task, outcomes) = self.main_pane.update(message);
+        let (task, outcomes) = self.main_pane.update(message, &self.displayed_track_ids);
         let component_task = task.map(app::Message::MainPane);
 
         if outcomes.is_empty() {
