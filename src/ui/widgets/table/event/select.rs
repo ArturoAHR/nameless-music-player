@@ -30,13 +30,22 @@ where
         }
     }
 
-    pub fn handle_mouse_row_click(
+    pub fn handle_mouse_row_selection(
         &self,
         state: &mut State<T::Identifier, ColumnId>,
         shell: &mut Shell<'_, Message>,
         row_id: T::Identifier,
+        button: mouse::Button,
         click_kind: click::Kind,
     ) {
+        if matches!(button, mouse::Button::Right)
+            && self
+                .selected_rows
+                .is_some_and(|selected_rows| selected_rows.contains(&row_id))
+        {
+            return;
+        }
+
         if let Some(on_row_select) = self.on_row_select.as_ref() {
             let empty_selection = FxHashSet::default();
             let selected_rows = self.selected_rows.unwrap_or(&empty_selection);
@@ -60,7 +69,10 @@ where
         }
 
         if let Some(on_row_double_click) = self.on_row_double_click.as_ref()
-            && matches!(click_kind, click::Kind::Double)
+            && matches!(
+                (button, click_kind),
+                (mouse::Button::Left, click::Kind::Double)
+            )
         {
             shell.publish(on_row_double_click(row_id));
             shell.capture_event();

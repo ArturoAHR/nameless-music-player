@@ -183,7 +183,13 @@ where
                     TableArea::Body {
                         row_id: Some(row_id),
                     } => {
-                        self.handle_mouse_row_click(state, shell, row_id.clone(), click.kind());
+                        self.handle_mouse_row_selection(
+                            state,
+                            shell,
+                            row_id.clone(),
+                            mouse::Button::Left,
+                            click.kind(),
+                        );
                     }
                     TableArea::Scroll {
                         scroll_area_offset: Some(scroll_area_offset),
@@ -200,6 +206,24 @@ where
                 }
             }
 
+            mouse::Button::Right => {
+                let Some(clicked_area) = state.mouse_interaction.area.as_ref() else {
+                    return;
+                };
+
+                if let TableArea::Body {
+                    row_id: Some(row_id),
+                } = clicked_area
+                {
+                    self.handle_mouse_row_selection(
+                        state,
+                        shell,
+                        row_id.clone(),
+                        mouse::Button::Right,
+                        click.kind(),
+                    );
+                }
+            }
             _ => {}
         }
     }
