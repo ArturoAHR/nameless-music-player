@@ -225,33 +225,26 @@ impl PlaybackQueue {
 
     /// Removes all upcoming system entries from the queue
     pub fn truncate(&mut self) {
-        self.entries = self
-            .entries
-            .iter()
-            .enumerate()
-            .filter_map(|(index, entry)| {
-                (index <= self.cursor || matches!(entry.source, PlaybackQueueEntrySource::User))
-                    .then_some(entry)
-            })
-            .copied()
-            .collect();
+        let cursor_position = self.cursor.min(self.entries.len().saturating_add(1));
+        let mut entries_tail = self.entries.split_off(cursor_position + 1);
+
+        entries_tail.retain(|entry| matches!(entry.source, PlaybackQueueEntrySource::User));
+
+        self.entries.extend(entries_tail);
     }
 
     /// Removes all tracks except the current one and the unplayed entries inserted by the user.
     pub fn prune(&mut self) {
-        self.entries = self
-            .entries
-            .iter()
-            .enumerate()
-            .filter_map(|(index, entry)| {
-                (self.cursor == index
-                    || matches!(entry.source, PlaybackQueueEntrySource::User)
-                        && self.cursor < index)
-                    .then_some(entry)
-            })
-            .copied()
-            .collect();
+        let cursor_position = self.cursor.min(self.entries.len());
+        let mut entries_tail = self.entries.split_off(cursor_position);
 
+        let current_entry_id = entries_tail.front().map(|entry| entry.id);
+        entries_tail.retain(|entry| {
+            current_entry_id.is_some_and(|current_entry_id| current_entry_id == entry.id)
+                || matches!(entry.source, PlaybackQueueEntrySource::User)
+        });
+
+        self.entries = entries_tail;
         self.cursor = 0;
     }
 
