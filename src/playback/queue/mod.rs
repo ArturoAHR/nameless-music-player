@@ -60,6 +60,7 @@ impl PlaybackQueue {
         id
     }
 
+    /// Sets the track pool and optionally the initial track.
     pub fn start(&mut self, track_pool: Vec<TrackId>, current_playing_track_id: Option<TrackId>) {
         self.cursor = 0;
         self.entries.clear();
@@ -80,7 +81,7 @@ impl PlaybackQueue {
         self.entries.get(self.cursor).map(|entry| entry.track_id)
     }
 
-    /// Peeks the next track without
+    /// Peeks the next track without moving the cursor
     pub fn peek_next(&mut self) -> Option<TrackId> {
         let original_queue_length = self.entries.len();
 
@@ -93,6 +94,7 @@ impl PlaybackQueue {
             .map(|entry| entry.track_id)
     }
 
+    /// Peeks the previous track without moving the cursor
     pub fn peek_previous(&mut self) -> Option<TrackId> {
         let original_queue_length = self.entries.len();
 
@@ -108,6 +110,7 @@ impl PlaybackQueue {
 
     #[allow(clippy::should_implement_trait)]
     #[instrument(skip(self), ret)]
+    /// Gets the next track and moves the cursor forward, generating new entries if needed.
     pub fn next(&mut self) -> Option<TrackId> {
         if self.get_remaining_tracks() <= PLAYBACK_QUEUE_LENGTH {
             self.generate_next_entries(PLAYBACK_QUEUE_LENGTH);
@@ -126,6 +129,7 @@ impl PlaybackQueue {
     }
 
     #[instrument(skip(self), ret)]
+    /// Gets the previous track and moves the cursor backwards, generating new previous entries if applicable.
     pub fn previous(&mut self) -> Option<TrackId> {
         if self.cursor == 0 {
             self.generate_previous_entries(PLAYBACK_QUEUE_LENGTH);
@@ -159,7 +163,8 @@ impl PlaybackQueue {
         }
     }
 
-    /// Inserts a queue entry at the end of of a consecutive set of user entries starting at the entry after the cursor.
+    /// Inserts a queue entry at the end of of a consecutive set of user entries starting at the entry after
+    /// the cursor.
     pub fn insert_next(&mut self, track_id: TrackId) {
         let insert_index = self
             .entries
