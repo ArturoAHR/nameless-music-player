@@ -1,5 +1,7 @@
 use sea_query::enum_def;
 
+use crate::traits::Identifiable;
+
 #[enum_def(table_name = "tag")]
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct Tag {
@@ -10,6 +12,16 @@ pub struct Tag {
     pub updated_at: i64,
     pub deleted_at: Option<i64>,
 }
+
+impl Identifiable for Tag {
+    type Identifier = i64;
+
+    fn id(&self) -> &Self::Identifier {
+        &self.id
+    }
+}
+
+pub type TagId = <Tag as Identifiable>::Identifier;
 
 #[enum_def(table_name = "tag_group")]
 #[derive(Debug, Clone, sqlx::FromRow)]

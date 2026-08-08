@@ -28,6 +28,7 @@ use crate::{
         audio_pipeline_thread_events::audio_pipeline_thread_events,
     },
     tag::{
+        index::TrackTagIndex,
         models::{Tag, TagGroup},
         repository::{TagLibrary, load_tag_library},
     },
@@ -58,6 +59,7 @@ pub struct App {
     pub tracks: FxHashMap<TrackId, Track>,
     pub tags: Vec<Tag>,
     pub tag_groups: Vec<TagGroup>,
+    pub track_tag_index: TrackTagIndex,
     pub displayed_track_ids: Vec<TrackId>,
     pub current_playing_track_id: Option<TrackId>,
 
@@ -131,6 +133,7 @@ impl App {
                 tracks: FxHashMap::default(),
                 tags: Vec::new(),
                 tag_groups: Vec::new(),
+                track_tag_index: TrackTagIndex::default(),
                 displayed_track_ids: Vec::new(),
                 current_playing_track_id: None,
 
@@ -230,11 +233,12 @@ impl App {
                 let TagLibrary {
                     tags,
                     tag_groups,
-                    track_tags: _,
+                    track_tags,
                 } = tag_library;
 
                 self.tags = tags;
                 self.tag_groups = tag_groups;
+                self.track_tag_index = TrackTagIndex::new(track_tags);
 
                 info!("Tag library loaded successfully");
             }
