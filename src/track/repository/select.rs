@@ -1,12 +1,14 @@
 use sea_query::{Asterisk, Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
+use tracing::instrument;
 
 use crate::{
     error::AppError,
     track::models::{Track, TrackIden},
 };
 
+#[instrument(skip(pool))]
 pub async fn get_tracks(pool: SqlitePool) -> Result<Vec<Track>, AppError> {
     let (sql, values) = Query::select()
         .column(Asterisk)

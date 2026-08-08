@@ -27,6 +27,10 @@ use crate::{
         audio_device::watch_default_device,
         audio_pipeline_thread_events::audio_pipeline_thread_events,
     },
+    tag::{
+        models::{Tag, TagGroup},
+        repository::{TagLibrary, load_tag_library},
+    },
     track::{
         models::{Track, TrackId},
         repository::get_tracks,
@@ -55,6 +59,8 @@ pub struct App {
     pub status: AppStatus,
     /// Tracks master list contains all the tracks, derived projections take
     pub tracks: FxHashMap<TrackId, Track>,
+    pub tags: Vec<Tag>,
+    pub tag_groups: Vec<TagGroup>,
     pub displayed_track_ids: Vec<TrackId>,
     pub current_playing_track_id: Option<TrackId>,
 
@@ -88,6 +94,8 @@ pub enum AppStatus {
 pub enum Message {
     LoadTracks,
     LoadedTracks(Result<Vec<Track>, AppError>),
+    LoadTagLibrary,
+    LoadedTagLibrary(Result<TagLibrary, AppError>),
     ScanDirectory(Option<Vec<PathBuf>>),
     ScannedDirectory(Result<(), AppError>),
     SplitDragged(PaneSplit, f64),
@@ -143,6 +151,8 @@ impl App {
                 ui_scale,
                 status: AppStatus::Idle,
                 tracks: FxHashMap::default(),
+                tags: Vec::new(),
+                tag_groups: Vec::new(),
                 displayed_track_ids: Vec::new(),
                 current_playing_track_id: None,
 
@@ -168,6 +178,7 @@ impl App {
             },
             Task::batch([
                 Task::done(Message::LoadTracks),
+                Task::done(Message::LoadTagLibrary),
                 window::latest().and_then(|window_id| {
                     Task::batch([
                         Task::done(Message::GetWindowId(window_id)),
@@ -264,15 +275,40 @@ impl App {
 
                 task = Task::perform(async move { get_tracks(pool).await }, Message::LoadedTracks);
             }
-            Message::LoadedTracks(tracks) => match tracks {
-                Ok(tracks) => {
-                    self.tracks = tracks.into_iter().map(|track| (track.id, track)).collect();
+            Message::LoadedTracks(Ok(tracks)) => {
+                self.tracks = tracks.into_iter().map(|track| (track.id, track)).collect();
 
-                    // TODO: Add loading state to main pane before setting the displayed tracks
-                    self.displayed_track_ids = self.tracks.keys().copied().collect();
-                }
-                Err(error) => error!("Failed to load tracks: {error}"),
-            },
+                // TODO: Add loading state to main pane before setting the displayed tracks
+                self.displayed_track_ids = self.tracks.keys().copied().collect();
+
+                info!("Tracks loaded successfully");
+            }
+            Message::LoadedTracks(Err(error)) => {
+                error!("Failed to load tracks: {error}");
+            }
+            Message::LoadTagLibrary => {
+                let pool = self.pool.clone();
+
+                task = Task::perform(
+                    async { load_tag_library(pool).await },
+                    Message::LoadedTagLibrary,
+                );
+            }
+            Message::LoadedTagLibrary(Ok(tag_library)) => {
+                let TagLibrary {
+                    tags,
+                    tag_groups,
+                    track_tags: _,
+                } = tag_library;
+
+                self.tags = tags;
+                self.tag_groups = tag_groups;
+
+                info!("Tag library loaded successfully");
+            }
+            Message::LoadedTagLibrary(Err(error)) => {
+                error!("Failed to load tag library: {error}");
+            }
             Message::ScanDirectory(Some(directories)) => {
                 let pool = self.pool.clone();
                 self.status = AppStatus::AddingTracks;

@@ -1,12 +1,14 @@
 use sea_query::{Asterisk, Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
+use tracing::instrument;
 
 use crate::{
     error::AppError,
     tag::models::{Tag, TagGroup, TagGroupIden, TagIden, TrackTag, TrackTagIden},
 };
 
+#[instrument(skip(pool))]
 pub async fn get_tags(pool: SqlitePool) -> Result<Vec<Tag>, AppError> {
     let (sql, values) = Query::select()
         .column(Asterisk)
@@ -21,6 +23,7 @@ pub async fn get_tags(pool: SqlitePool) -> Result<Vec<Tag>, AppError> {
     Ok(tags)
 }
 
+#[instrument(skip(pool))]
 pub async fn get_tag_groups(pool: SqlitePool) -> Result<Vec<TagGroup>, AppError> {
     let (sql, values) = Query::select()
         .column(Asterisk)
@@ -35,6 +38,7 @@ pub async fn get_tag_groups(pool: SqlitePool) -> Result<Vec<TagGroup>, AppError>
     Ok(tag_groups)
 }
 
+#[instrument(skip(pool))]
 pub async fn get_track_tags(pool: SqlitePool) -> Result<Vec<TrackTag>, AppError> {
     let (sql, values) = Query::select()
         .column(Asterisk)
@@ -46,4 +50,26 @@ pub async fn get_track_tags(pool: SqlitePool) -> Result<Vec<TrackTag>, AppError>
         .await?;
 
     Ok(track_tags)
+}
+
+#[derive(Debug, Clone)]
+pub struct TagLibrary {
+    pub tags: Vec<Tag>,
+    pub tag_groups: Vec<TagGroup>,
+    pub track_tags: Vec<TrackTag>,
+}
+
+#[instrument(skip(pool))]
+pub async fn load_tag_library(pool: SqlitePool) -> Result<TagLibrary, AppError> {
+    let (tags, tag_groups, track_tags) = iced::futures::try_join!(
+        get_tags(pool.clone()),
+        get_tag_groups(pool.clone()),
+        get_track_tags(pool)
+    )?;
+
+    Ok(TagLibrary {
+        tags,
+        tag_groups,
+        track_tags,
+    })
 }
