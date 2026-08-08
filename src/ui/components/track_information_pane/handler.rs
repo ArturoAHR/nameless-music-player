@@ -3,19 +3,22 @@ use iced::{Element, Renderer, Task};
 use crate::{
     app::{self, App},
     event::Event,
-    ui::{components::track_information_pane::Message, theme::Theme},
+    ui::{self, components::track_information_pane::Message, theme::Theme},
 };
 
 impl App {
     pub fn view_track_information_pane(&self) -> Element<'_, app::Message, Theme, Renderer> {
         self.track_information_pane
             .view(&self.theme)
-            .map(app::Message::TrackInformationPane)
+            .map(ui::Message::TrackInformationPane)
+            .map(app::Message::Ui)
     }
 
     pub fn handle_track_information_pane(&mut self, event: Message) -> Task<app::Message> {
         let (task, _outcomes) = self.track_information_pane.update(event);
-        let component_task = task.map(app::Message::TrackInformationPane);
+        let component_task = task
+            .map(ui::Message::TrackInformationPane)
+            .map(app::Message::Ui);
 
         // if outcomes.len() == 0 {
         component_task
@@ -37,6 +40,7 @@ impl App {
     pub fn notify_track_information_pane(&mut self, event: &Event) -> Task<app::Message> {
         self.track_information_pane
             .on_event(event)
-            .map(app::Message::TrackInformationPane)
+            .map(ui::Message::TrackInformationPane)
+            .map(app::Message::Ui)
     }
 }

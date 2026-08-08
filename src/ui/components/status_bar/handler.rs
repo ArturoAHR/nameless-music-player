@@ -3,19 +3,20 @@ use iced::{Element, Renderer, Task};
 use crate::{
     app::{self, App},
     event::Event,
-    ui::{components::status_bar::Message, theme::Theme},
+    ui::{self, components::status_bar::Message, theme::Theme},
 };
 
 impl App {
     pub fn view_status_bar(&self) -> Element<'_, app::Message, Theme, Renderer> {
         self.status_bar
             .view(&self.theme, &self.status)
-            .map(app::Message::StatusBar)
+            .map(ui::Message::StatusBar)
+            .map(app::Message::Ui)
     }
 
     pub fn handle_status_bar(&mut self, event: Message) -> Task<app::Message> {
         let (task, _outcomes) = self.status_bar.update(event);
-        let component_task = task.map(app::Message::StatusBar);
+        let component_task = task.map(ui::Message::StatusBar).map(app::Message::Ui);
 
         // if outcomes.len() == 0 {
         component_task
@@ -35,6 +36,9 @@ impl App {
     }
 
     pub fn notify_status_bar(&mut self, event: &Event) -> Task<app::Message> {
-        self.status_bar.on_event(event).map(app::Message::StatusBar)
+        self.status_bar
+            .on_event(event)
+            .map(ui::Message::StatusBar)
+            .map(app::Message::Ui)
     }
 }

@@ -4,6 +4,7 @@ use crate::{
     app::{self, App},
     event::Event,
     ui::{
+        self,
         components::playback_bar::{
             Message, Outcome, PlaybackBarEventContext, PlaybackBarUpdateContext,
         },
@@ -20,7 +21,8 @@ impl App {
                 self.current_playing_track_id.as_ref(),
                 &self.playback_queue,
             )
-            .map(app::Message::PlaybackBar)
+            .map(ui::Message::PlaybackBar)
+            .map(app::Message::Ui)
     }
 
     pub fn handle_playback_bar(&mut self, message: Message) -> Task<app::Message> {
@@ -30,7 +32,7 @@ impl App {
         };
 
         let (task, outcomes) = self.playback_bar.update(message, playback_bar_context);
-        let component_task = task.map(app::Message::PlaybackBar);
+        let component_task = task.map(ui::Message::PlaybackBar).map(app::Message::Ui);
 
         if outcomes.is_empty() {
             return component_task;
@@ -58,6 +60,7 @@ impl App {
 
         self.playback_bar
             .on_event(event, context)
-            .map(app::Message::PlaybackBar)
+            .map(ui::Message::PlaybackBar)
+            .map(app::Message::Ui)
     }
 }

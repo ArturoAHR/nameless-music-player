@@ -4,6 +4,7 @@ use crate::{
     app::{self, App},
     event::Event,
     ui::{
+        self,
         components::queue_pane::{Message, Outcome},
         theme::Theme,
     },
@@ -13,12 +14,13 @@ impl App {
     pub fn view_queue_pane(&self) -> Element<'_, app::Message, Theme, Renderer> {
         self.queue_pane
             .view(&self.theme, &self.tracks, &self.playback_queue)
-            .map(app::Message::QueuePane)
+            .map(ui::Message::QueuePane)
+            .map(app::Message::Ui)
     }
 
     pub fn handle_queue_pane(&mut self, event: Message) -> Task<app::Message> {
         let (task, outcomes) = self.queue_pane.update(event, &self.playback_queue);
-        let component_task = task.map(app::Message::QueuePane);
+        let component_task = task.map(ui::Message::QueuePane).map(app::Message::Ui);
 
         if outcomes.is_empty() {
             return component_task;
@@ -40,6 +42,9 @@ impl App {
     }
 
     pub fn notify_queue_pane(&mut self, event: &Event) -> Task<app::Message> {
-        self.queue_pane.on_event(event).map(app::Message::QueuePane)
+        self.queue_pane
+            .on_event(event)
+            .map(ui::Message::QueuePane)
+            .map(app::Message::Ui)
     }
 }
