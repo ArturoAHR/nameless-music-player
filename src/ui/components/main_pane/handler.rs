@@ -36,6 +36,7 @@ impl App {
         for outcome in outcomes {
             let outcome = match outcome {
                 Outcome::Playback(playback_outcome) => app::Outcome::Playback(playback_outcome),
+                Outcome::Modal(modal_outcome) => app::Outcome::Modal(modal_outcome),
             };
 
             let outcome_task = self.handle_outcome(outcome);

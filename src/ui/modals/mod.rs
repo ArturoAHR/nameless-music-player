@@ -1,12 +1,18 @@
 use iced::{Element, Renderer, Task};
 
-use crate::{app::Outcome, event::Event, track::models::TrackId, ui::theme::Theme};
+use crate::{
+    app::{self, Outcome},
+    event::Event,
+    track::models::TrackId,
+    ui::{modals::tag_tracks::TagTracksModal, theme::Theme},
+};
 
 pub mod handler;
+pub mod tag_tracks;
 
 pub enum AppModal {
     ManageTags(()),
-    TagTracks(()),
+    TagTracks(TagTracksModal),
 }
 
 #[derive(Debug, Clone)]
@@ -15,7 +21,7 @@ pub enum Message {
     OpenTagTracksModal(Vec<TrackId>),
     CloseModal,
     // ManageTagsModal(manage_tags::Message)
-    // TagTracksModal(tag_tracks::Message)
+    TagTracksModal(tag_tracks::Message),
 }
 
 #[derive(Default)]
@@ -25,32 +31,32 @@ pub struct ModalController {
 
 impl ModalController {
     pub fn update(&mut self, message: Message) -> (Task<Message>, Vec<Outcome>) {
-        let task = Task::none();
-        let outcome = Vec::new();
+        let mut task = Task::none();
+        let mut outcomes = Vec::new();
 
         match message {
             Message::OpenManageTagsModal => {
                 self.current_modal = Some(AppModal::ManageTags(()));
             }
-            Message::OpenTagTracksModal(_) => {
-                self.current_modal = Some(AppModal::TagTracks(()));
+            Message::OpenTagTracksModal(track_tagging_queue) => {
+                self.open_tag_tracks_modal(track_tagging_queue);
             }
             Message::CloseModal => {
                 self.current_modal = None;
-            } //
-              // Message::ManageTagsModal(message) => {
-              //     self.handle_manage_tags_modal(message);
-              // }
-              // Message::TagTracksModal(message) => {
-              //     self.handle_tag_tracks_modal(message);
-              // }
+            }
+            // Message::ManageTagsModal(message) => {
+            //     self.handle_manage_tags_modal(message);
+            // }
+            Message::TagTracksModal(message) => {
+                (task, outcomes) = self.handle_tag_tracks_modal(message);
+            }
         }
 
-        (task, outcome)
+        (task, outcomes)
     }
 
-    pub fn on_event(&mut self, _event: &Event) -> Task<Message> {
-        let task = Task::none();
+    pub fn on_event(&mut self, event: &Event) -> Task<Message> {
+        let mut task = Task::none();
 
         let Some(current_modal) = self.current_modal.as_mut() else {
             return Task::none();
@@ -60,8 +66,10 @@ impl ModalController {
             AppModal::ManageTags(_manage_tags_modal) => {
                 // task = manage_tags_modal.on_event(event);
             }
-            AppModal::TagTracks(_tag_tracks_modal) => {
-                // task = tag_tracks_modal.on_event(event);
+            AppModal::TagTracks(tag_tracks_modal) => {
+                task = tag_tracks_modal
+                    .on_event(event)
+                    .map(Message::TagTracksModal);
             }
         }
 
@@ -70,21 +78,29 @@ impl ModalController {
 
     pub fn view<'a>(
         &self,
-        _theme: &Theme,
+        theme: &Theme,
         // tracks: &FxHashMap<TrackId, Track>,
     ) -> Option<Element<'a, Message, Theme, Renderer>> {
-        let modal = None;
+        let mut modal = None;
 
         match self.current_modal.as_ref()? {
             AppModal::ManageTags(_manage_tags_modal) => {
                 //modal = manage_tags_modal.view(theme)
             }
-            AppModal::TagTracks(_tag_tracks_modal) => {
-                //modal = tag_tracks_modal.view(theme, track)
+            AppModal::TagTracks(tag_tracks_modal) => {
+                modal = Some(tag_tracks_modal.view(theme).map(Message::TagTracksModal));
             }
         }
 
         modal
+    }
+
+    pub fn close_modal(&mut self) -> Task<app::Message> {
+        self.current_modal = None;
+
+        // TODO: Add saving current track tags index to the database on closing tag tracks modal.
+
+        Task::none()
     }
 
     pub fn is_modal_active(&self) -> bool {

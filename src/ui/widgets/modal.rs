@@ -3,7 +3,10 @@ use iced::{
     widget::{center, container, opaque, stack},
 };
 
-use crate::ui::theme::{Theme, catalog::container::modal_backdrop};
+use crate::ui::theme::{
+    Theme,
+    catalog::{self},
+};
 
 pub fn modal_context<'a, Message>(
     base: impl Into<Element<'a, Message, Theme, Renderer>>,
@@ -19,7 +22,7 @@ where
             container(center(opaque(modal_content.into())))
                 .width(Length::Fill)
                 .height(Length::Fill)
-                .style(modal_backdrop),
+                .style(catalog::container::modal_backdrop),
         ));
     }
 

@@ -11,6 +11,13 @@ use crate::{
 #[derive(Debug, Clone)]
 pub enum Outcome {
     Playback(PlaybackOutcome),
+    Modal(ModalOutcome),
+}
+
+#[derive(Debug, Clone)]
+pub enum ModalOutcome {
+    CloseModal,
+    OpenTagTracksModal(Vec<TrackId>),
 }
 
 #[derive(Debug, Clone)]
@@ -36,6 +43,7 @@ impl App {
     pub fn handle_outcome(&mut self, outcome: Outcome) -> Task<Message> {
         let outcome_task = match outcome {
             Outcome::Playback(outcome) => self.handle_playback_outcome(outcome),
+            Outcome::Modal(outcome) => self.handle_modal_outcome(outcome),
         };
 
         match outcome_task {
@@ -125,6 +133,26 @@ impl App {
                         self.playback_queue.insert_next(queued_track_id);
                     }
                 }
+            }
+        }
+
+        Ok(task)
+    }
+
+    #[instrument(skip(self))]
+    pub fn handle_modal_outcome(
+        &mut self,
+        outcome: ModalOutcome,
+    ) -> Result<Task<Message>, AppError> {
+        let mut task = Task::none();
+
+        match outcome {
+            ModalOutcome::CloseModal => {
+                task = self.modal_controller.close_modal();
+            }
+            ModalOutcome::OpenTagTracksModal(track_tagging_queue) => {
+                self.modal_controller
+                    .open_tag_tracks_modal(track_tagging_queue);
             }
         }
 
