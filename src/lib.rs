@@ -13,6 +13,7 @@ pub mod subscriptions;
 pub mod track;
 pub mod traits;
 pub mod ui;
+pub mod tag;
 
 #[cfg(any(test, feature = "testing"))]
 pub mod test;
