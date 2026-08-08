@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{cell::Cell, collections::VecDeque};
 
 use thiserror::Error;
 use tracing::instrument;
@@ -27,7 +27,7 @@ pub enum PlaybackQueueError {
 #[derive(Debug, Clone)]
 pub struct PlaybackQueue {
     /// Incrementing unique identifier granted to each queue entry upon creation.
-    next_entry_id: PlaybackQueueEntryId,
+    next_entry_id: Cell<PlaybackQueueEntryId>,
 
     /// Current position in the queue.
     pub cursor: usize,
@@ -45,7 +45,7 @@ pub struct PlaybackQueue {
 impl PlaybackQueue {
     pub fn new() -> Self {
         Self {
-            next_entry_id: 0,
+            next_entry_id: Cell::default(),
             cursor: 0,
             entries: VecDeque::new(),
             track_pool: Vec::new(),
@@ -54,9 +54,11 @@ impl PlaybackQueue {
         }
     }
 
-    fn get_next_entry_id(&mut self) -> PlaybackQueueEntryId {
-        let id = self.next_entry_id;
-        self.next_entry_id += 1;
+    fn get_next_entry_id(&self) -> PlaybackQueueEntryId {
+        let id = self.next_entry_id.get();
+
+        self.next_entry_id.replace(id + 1);
+
         id
     }
 
