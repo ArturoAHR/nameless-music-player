@@ -74,15 +74,12 @@ impl PlaybackQueue {
             Either::Right(self.track_pool.iter())
         };
 
-        #[allow(clippy::needless_collect)]
-        let next_track_ids: Vec<TrackId> = track_pool
+        let next_track_ids = track_pool
             .skip(track_pool_position + self.entries.len().min(1))
             .take(amount)
-            .copied()
-            .collect();
+            .copied();
 
         let next_entries: Vec<PlaybackQueueEntry> = next_track_ids
-            .into_iter()
             .map(|track_id| {
                 let id = self.get_next_entry_id();
 

@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{cell::Cell, collections::VecDeque};
 
 use thiserror::Error;
 use tracing::instrument;
@@ -27,7 +27,7 @@ pub enum PlaybackQueueError {
 #[derive(Debug, Clone)]
 pub struct PlaybackQueue {
     /// Incrementing unique identifier granted to each queue entry upon creation.
-    next_entry_id: PlaybackQueueEntryId,
+    next_entry_id: Cell<PlaybackQueueEntryId>,
 
     /// Current position in the queue.
     pub cursor: usize,
@@ -45,7 +45,7 @@ pub struct PlaybackQueue {
 impl PlaybackQueue {
     pub fn new() -> Self {
         Self {
-            next_entry_id: 0,
+            next_entry_id: Cell::default(),
             cursor: 0,
             entries: VecDeque::new(),
             track_pool: Vec::new(),
@@ -54,12 +54,15 @@ impl PlaybackQueue {
         }
     }
 
-    fn get_next_entry_id(&mut self) -> PlaybackQueueEntryId {
-        let id = self.next_entry_id;
-        self.next_entry_id += 1;
+    fn get_next_entry_id(&self) -> PlaybackQueueEntryId {
+        let id = self.next_entry_id.get();
+
+        self.next_entry_id.replace(id + 1);
+
         id
     }
 
+    /// Sets the track pool and optionally the initial track.
     pub fn start(&mut self, track_pool: Vec<TrackId>, current_playing_track_id: Option<TrackId>) {
         self.cursor = 0;
         self.entries.clear();
@@ -80,7 +83,7 @@ impl PlaybackQueue {
         self.entries.get(self.cursor).map(|entry| entry.track_id)
     }
 
-    /// Peeks the next track without
+    /// Peeks the next track without moving the cursor
     pub fn peek_next(&mut self) -> Option<TrackId> {
         let original_queue_length = self.entries.len();
 
@@ -93,6 +96,7 @@ impl PlaybackQueue {
             .map(|entry| entry.track_id)
     }
 
+    /// Peeks the previous track without moving the cursor
     pub fn peek_previous(&mut self) -> Option<TrackId> {
         let original_queue_length = self.entries.len();
 
@@ -108,6 +112,7 @@ impl PlaybackQueue {
 
     #[allow(clippy::should_implement_trait)]
     #[instrument(skip(self), ret)]
+    /// Gets the next track and moves the cursor forward, generating new entries if needed.
     pub fn next(&mut self) -> Option<TrackId> {
         if self.get_remaining_tracks() <= PLAYBACK_QUEUE_LENGTH {
             self.generate_next_entries(PLAYBACK_QUEUE_LENGTH);
@@ -126,6 +131,7 @@ impl PlaybackQueue {
     }
 
     #[instrument(skip(self), ret)]
+    /// Gets the previous track and moves the cursor backwards, generating new previous entries if applicable.
     pub fn previous(&mut self) -> Option<TrackId> {
         if self.cursor == 0 {
             self.generate_previous_entries(PLAYBACK_QUEUE_LENGTH);
@@ -159,7 +165,8 @@ impl PlaybackQueue {
         }
     }
 
-    /// Inserts a queue entry at the end of of a consecutive set of user entries starting at the entry after the cursor.
+    /// Inserts a queue entry at the end of of a consecutive set of user entries starting at the entry after
+    /// the cursor.
     pub fn insert_next(&mut self, track_id: TrackId) {
         let insert_index = self
             .entries
@@ -220,33 +227,26 @@ impl PlaybackQueue {
 
     /// Removes all upcoming system entries from the queue
     pub fn truncate(&mut self) {
-        self.entries = self
-            .entries
-            .iter()
-            .enumerate()
-            .filter_map(|(index, entry)| {
-                (index <= self.cursor || matches!(entry.source, PlaybackQueueEntrySource::User))
-                    .then_some(entry)
-            })
-            .copied()
-            .collect();
+        let cursor_position = self.cursor.min(self.entries.len().saturating_add(1));
+        let mut entries_tail = self.entries.split_off(cursor_position + 1);
+
+        entries_tail.retain(|entry| matches!(entry.source, PlaybackQueueEntrySource::User));
+
+        self.entries.extend(entries_tail);
     }
 
     /// Removes all tracks except the current one and the unplayed entries inserted by the user.
     pub fn prune(&mut self) {
-        self.entries = self
-            .entries
-            .iter()
-            .enumerate()
-            .filter_map(|(index, entry)| {
-                (self.cursor == index
-                    || matches!(entry.source, PlaybackQueueEntrySource::User)
-                        && self.cursor < index)
-                    .then_some(entry)
-            })
-            .copied()
-            .collect();
+        let cursor_position = self.cursor.min(self.entries.len());
+        let mut entries_tail = self.entries.split_off(cursor_position);
 
+        let current_entry_id = entries_tail.front().map(|entry| entry.id);
+        entries_tail.retain(|entry| {
+            current_entry_id.is_some_and(|current_entry_id| current_entry_id == entry.id)
+                || matches!(entry.source, PlaybackQueueEntrySource::User)
+        });
+
+        self.entries = entries_tail;
         self.cursor = 0;
     }
 
