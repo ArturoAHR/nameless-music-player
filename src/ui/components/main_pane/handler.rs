@@ -4,6 +4,7 @@ use crate::{
     app::{self, App},
     event::Event,
     ui::{
+        self,
         components::main_pane::{Message, Outcome},
         theme::Theme,
     },
@@ -18,12 +19,13 @@ impl App {
                 &self.displayed_track_ids,
                 self.current_playing_track_id.as_ref(),
             )
-            .map(app::Message::MainPane)
+            .map(ui::Message::MainPane)
+            .map(app::Message::Ui)
     }
 
     pub fn handle_main_pane(&mut self, message: Message) -> Task<app::Message> {
         let (task, outcomes) = self.main_pane.update(message, &self.displayed_track_ids);
-        let component_task = task.map(app::Message::MainPane);
+        let component_task = task.map(ui::Message::MainPane).map(app::Message::Ui);
 
         if outcomes.is_empty() {
             return component_task;
@@ -45,6 +47,9 @@ impl App {
     }
 
     pub fn notify_main_pane(&mut self, event: &Event) -> Task<app::Message> {
-        self.main_pane.on_event(event).map(app::Message::MainPane)
+        self.main_pane
+            .on_event(event)
+            .map(ui::Message::MainPane)
+            .map(app::Message::Ui)
     }
 }

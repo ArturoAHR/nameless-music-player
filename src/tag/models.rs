@@ -1,0 +1,31 @@
+use sea_query::enum_def;
+
+#[enum_def(table_name = "tag")]
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct Tag {
+    pub id: i64,
+    pub name: String,
+    pub tag_group_id: i64,
+    pub created_at: i64,
+    pub updated_at: i64,
+    pub deleted_at: Option<i64>,
+}
+
+#[enum_def(table_name = "tag_group")]
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct TagGroup {
+    pub id: i64,
+    pub name: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+    pub deleted_at: Option<i64>,
+}
+
+#[enum_def(table_name = "track_tag")]
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct TrackTag {
+    pub id: i64,
+    pub tag_id: i64,
+    pub track_id: i64,
+    pub created_at: i64,
+}

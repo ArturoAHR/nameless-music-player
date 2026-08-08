@@ -5,6 +5,7 @@ use crate::{
     app::{self, App},
     event::Event,
     ui::{
+        self,
         components::navigation_bar::{Message, Outcome},
         theme::Theme,
     },
@@ -14,12 +15,13 @@ impl App {
     pub fn view_navigation_bar(&self) -> Element<'_, app::Message, Theme, Renderer> {
         self.navigation_bar
             .view(&self.theme)
-            .map(app::Message::NavigationBar)
+            .map(ui::Message::NavigationBar)
+            .map(app::Message::Ui)
     }
 
     pub fn handle_navigation_bar(&mut self, message: Message) -> Task<app::Message> {
         let (task, outcomes) = self.navigation_bar.update(message);
-        let component_task = task.map(app::Message::NavigationBar);
+        let component_task = task.map(ui::Message::NavigationBar).map(app::Message::Ui);
 
         if outcomes.is_empty() {
             return component_task;
@@ -46,6 +48,7 @@ impl App {
     pub fn notify_navigation_bar(&mut self, event: &Event) -> Task<app::Message> {
         self.navigation_bar
             .on_event(event)
-            .map(app::Message::NavigationBar)
+            .map(ui::Message::NavigationBar)
+            .map(app::Message::Ui)
     }
 }
