@@ -49,10 +49,14 @@ impl ModalController {
         (task, outcome)
     }
 
-    pub fn on_event(&mut self, _event: &Event) -> Option<Task<Message>> {
-        let task = None;
+    pub fn on_event(&mut self, _event: &Event) -> Task<Message> {
+        let task = Task::none();
 
-        match self.current_modal.as_mut()? {
+        let Some(current_modal) = self.current_modal.as_mut() else {
+            return Task::none();
+        };
+
+        match current_modal {
             AppModal::ManageTags(_manage_tags_modal) => {
                 // task = manage_tags_modal.on_event(event);
             }

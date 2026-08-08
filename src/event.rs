@@ -9,6 +9,7 @@ use crate::{
 pub enum Event {
     AttemptedPlayingTrack,
     ActiveTrackChanged(Box<Option<Track>>),
+    PlaybackProgressed(f64),
     StartedPlayback,
     StoppedPlayback,
     EndOfTrack,
@@ -25,6 +26,7 @@ impl App {
             self.notify_queue_pane(&event),
             self.notify_status_bar(&event),
             self.notify_track_information_pane(&event),
+            self.notify_modal(&event),
         ])
     }
 }

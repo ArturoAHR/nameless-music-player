@@ -2,6 +2,7 @@ use iced::{Element, Renderer, Task};
 
 use crate::{
     app::{self, App},
+    event::Event,
     ui::{self, modals::Message, theme::Theme},
 };
 
@@ -16,5 +17,12 @@ impl App {
         let (task, _outcomes) = self.modal_controller.update(message);
 
         task.map(ui::Message::Modal).map(app::Message::Ui)
+    }
+
+    pub fn notify_modal(&mut self, event: &Event) -> Task<app::Message> {
+        self.modal_controller
+            .on_event(event)
+            .map(ui::Message::Modal)
+            .map(app::Message::Ui)
     }
 }

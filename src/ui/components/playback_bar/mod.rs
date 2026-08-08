@@ -54,7 +54,6 @@ pub enum Message {
     PlayPrevious,
     Scrubbed(f64),
     Seeked,
-    PlaybackProgressed(f64),
     ChangeVolumePercentage(u8),
     MutePlayback,
     CycleRepeatMode,
@@ -79,7 +78,6 @@ pub struct PlaybackBarEventContext {
 
 /*
  * TODO:
- * - Handle track label overflow.
  * - Fix icons with consistent design.
  */
 impl PlaybackBar {
@@ -97,13 +95,13 @@ impl PlaybackBar {
     #[instrument(skip(self), level = "debug")]
     pub fn update(
         &mut self,
-        event: Message,
+        message: Message,
         ctx: PlaybackBarUpdateContext,
     ) -> (Task<Message>, Vec<Outcome>) {
         let task = Task::none();
         let mut outcomes = Vec::new();
 
-        match event {
+        match message {
             Message::Scrubbed(position) => {
                 self.current_position = position;
 
@@ -116,9 +114,7 @@ impl PlaybackBar {
                     outcomes.push(Outcome::Playback(PlaybackOutcome::Pause));
                 }
             }
-            Message::PlaybackProgressed(position) => {
-                self.current_position = position;
-            }
+
             Message::Seeked => {
                 let pre_seek_status = match self.status {
                     PlaybackBarStatus::Playing => PlaybackControllerStatus::Playing,
@@ -176,6 +172,9 @@ impl PlaybackBar {
 
                 self.current_position_generation_threshold = ctx.playback_engine_generation;
                 self.current_position = 0.0;
+            }
+            Event::PlaybackProgressed(position) => {
+                self.current_position = *position;
             }
             _ => {}
         }

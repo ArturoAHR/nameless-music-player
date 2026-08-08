@@ -10,7 +10,6 @@ use crate::{
         pipeline::thread::AudioPipelineThreadEvent,
     },
     track::models::TrackId,
-    ui::{self, components::playback_bar},
 };
 
 #[derive(Debug, Clone)]
@@ -72,9 +71,7 @@ impl App {
             }
             Message::PollPlaybackCurrentPlaybackPosition => {
                 if let Some(current_position) = self.get_current_position() {
-                    task = Task::done(app::Message::Ui(ui::Message::PlaybackBar(
-                        playback_bar::Message::PlaybackProgressed(current_position),
-                    )));
+                    task = self.broadcast(Event::PlaybackProgressed(current_position));
                 }
             }
             Message::PendingOutputDeviceChange => {
