@@ -4,7 +4,7 @@ use iced::{
     widget::container::{Catalog, Style},
 };
 
-use crate::ui::theme::Theme;
+use crate::ui::theme::{Theme, color::with_alpha};
 
 pub type StyleFn<'a> = Box<dyn Fn(&Theme) -> Style + 'a>;
 
@@ -34,6 +34,13 @@ pub fn context_menu(theme: &Theme) -> Style {
             blur_radius: theme.sizes.border.radius_md,
             offset: Vector::new(theme.sizes.space.sm, theme.sizes.space.sm),
         },
+        ..Style::default()
+    }
+}
+
+pub fn modal_backdrop(_theme: &Theme) -> Style {
+    Style {
+        background: Some(with_alpha(Color::BLACK, 0.8).into()),
         ..Style::default()
     }
 }

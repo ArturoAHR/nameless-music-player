@@ -7,6 +7,7 @@ use crate::{
             explorer_pane, main_pane, navigation_bar, playback_bar, queue_pane, status_bar,
             track_information_pane,
         },
+        modals,
         utils::pane::{are_pane_heights_valid, are_pane_widths_valid},
     },
 };
@@ -24,6 +25,8 @@ pub enum Message {
     TrackInformationPane(track_information_pane::Message),
     StatusBar(status_bar::Message),
     PlaybackBar(playback_bar::Message),
+
+    Modal(modals::Message),
 }
 
 #[derive(Debug, Clone)]
@@ -99,6 +102,8 @@ impl App {
             }
             Message::StatusBar(message) => task = self.handle_status_bar(message),
             Message::PlaybackBar(message) => task = self.handle_playback_bar(message),
+
+            Message::Modal(message) => task = self.handle_modal(message),
         }
 
         task

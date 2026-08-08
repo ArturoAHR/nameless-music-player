@@ -44,7 +44,9 @@ use crate::{
             track_information_pane::TrackInformationPane,
         },
         handler::PaneSplit,
+        modals::ModalController,
         theme::Theme,
+        widgets::modal::modal_context,
     },
 };
 
@@ -78,6 +80,8 @@ pub struct App {
     pub track_information_pane: TrackInformationPane,
     pub status_bar: StatusBar,
     pub playback_bar: PlaybackBar,
+
+    pub modal_controller: ModalController,
 }
 
 #[derive(Debug)]
@@ -156,6 +160,7 @@ impl App {
                 track_information_pane: TrackInformationPane {},
                 status_bar: StatusBar {},
                 playback_bar: PlaybackBar::new(),
+                modal_controller: ModalController::default(),
             },
             Task::batch([
                 Task::done(Message::LoadTracks),
@@ -285,6 +290,8 @@ impl App {
 
         let playback_bar = self.view_playback_bar();
 
+        let modal = self.view_modal();
+
         let queue_track_information_pane_split = horizontal_split(
             queue_pane,
             track_information_pane,
@@ -324,17 +331,19 @@ impl App {
         )
         .handle_width(5.0);
 
-        column![
-            navigation_bar,
-            container(explorer_main_pane_split)
-                .height(Length::Fill)
-                .width(Length::Fill),
-            status_bar,
-            playback_bar
-        ]
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .into()
+        modal_context(
+            column![
+                navigation_bar,
+                container(explorer_main_pane_split)
+                    .height(Length::Fill)
+                    .width(Length::Fill),
+                status_bar,
+                playback_bar
+            ]
+            .width(Length::Fill)
+            .height(Length::Fill),
+            modal,
+        )
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
