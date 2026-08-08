@@ -81,10 +81,7 @@ impl PlaybackQueue {
 
         let next_entries: Vec<PlaybackQueueEntry> = next_track_ids
             .map(|track_id| {
-                // Manually increasing `next_entry_id` instead of calling `PlaybackQueue::get_next_entry_id`
-                // to prevent borrow checker issues.
-                let id = self.next_entry_id;
-                self.next_entry_id += 1;
+                let id = self.get_next_entry_id();
 
                 PlaybackQueueEntry::system(id, track_id)
             })
