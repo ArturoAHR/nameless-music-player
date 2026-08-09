@@ -1,20 +1,22 @@
 use iced::{
     Element, Length, Renderer, Task,
-    widget::{center, column, container, text},
+    widget::{column, container, text},
 };
+use rustc_hash::FxHashMap;
 
 use crate::{
     event::Event,
-    outcome::PlaybackOutcome,
-    track::models::TrackId,
+    outcome::{ModalOutcome, PlaybackOutcome},
+    track::models::{Track, TrackId},
     ui::{
-        modals::ModalController,
+        modals::tag_tracks::widgets::header,
         theme::{Theme, catalog},
         widgets::separator::vertical_separator,
     },
 };
 
 pub mod handler;
+pub mod widgets;
 
 pub struct TagTracksModal {
     track_tagging_queue: Vec<TrackId>,
@@ -35,7 +37,7 @@ pub enum Message {
 
 pub enum Outcome {
     Playback(PlaybackOutcome),
-    Modal(ModalController),
+    Modal(ModalOutcome),
 }
 
 impl TagTracksModal {
@@ -49,21 +51,40 @@ impl TagTracksModal {
         }
     }
 
-    pub fn update(&mut self, _message: Message) -> (Task<Message>, Vec<Outcome>) {
-        (Task::none(), Vec::new())
+    pub fn update(&mut self, message: Message) -> (Task<Message>, Vec<Outcome>) {
+        let task = Task::none();
+        let mut outcomes = Vec::new();
+
+        match message {
+            Message::Close => outcomes.push(Outcome::Modal(ModalOutcome::CloseModal)),
+        }
+
+        (task, outcomes)
     }
 
     pub fn on_event(&mut self, _event: &Event) -> Task<Message> {
         Task::none()
     }
 
-    pub fn view<'a>(&self, _theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
+    pub fn view<'a>(
+        &self,
+        theme: &Theme,
+        tracks: &'a FxHashMap<TrackId, Track>,
+    ) -> Element<'a, Message, Theme, Renderer> {
         let width = 1000.0;
         let height = 770.0;
 
+        let current_tagging_track_id = self
+            .track_tagging_queue
+            .get(self.track_tagging_queue_cursor)
+            .unwrap();
+        let track = tracks.get(current_tagging_track_id).unwrap();
+        let track_number = self.track_tagging_queue_cursor + 1;
+        let track_total = self.track_tagging_queue.len();
+
         container(
             column![
-                container(text("Header")).height(128.0).width(Length::Fill),
+                header(theme, track, track_number, track_total),
                 vertical_separator(),
                 container(text("Playback"))
                     .height(100.0)

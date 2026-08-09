@@ -4,7 +4,7 @@ use crate::{
     track::models::TrackId,
     ui::modals::{
         self, AppModal, ModalController,
-        tag_tracks::{Message, TagTracksModal},
+        tag_tracks::{Message, Outcome, TagTracksModal},
     },
 };
 
@@ -17,11 +17,19 @@ impl ModalController {
             return (Task::none(), Vec::new());
         };
 
-        let (task, _outcomes) = tag_tracks_modal.update(message);
+        let (task, outcomes) = tag_tracks_modal.update(message);
 
         let modal_task = task.map(modals::Message::TagTracksModal);
 
-        (modal_task, Vec::new())
+        let outcomes = outcomes
+            .into_iter()
+            .map(|outcome| match outcome {
+                Outcome::Playback(outcome) => modals::Outcome::Playback(outcome),
+                Outcome::Modal(outcome) => modals::Outcome::Modal(outcome),
+            })
+            .collect();
+
+        (modal_task, outcomes)
     }
 
     pub fn open_tag_tracks_modal(&mut self, track_tagging_queue: Vec<TrackId>) {

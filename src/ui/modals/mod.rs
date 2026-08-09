@@ -1,9 +1,11 @@
 use iced::{Element, Renderer, Task};
+use rustc_hash::FxHashMap;
 
 use crate::{
-    app::{self, Outcome},
+    app::{self},
     event::Event,
-    track::models::TrackId,
+    outcome::{ModalOutcome, PlaybackOutcome},
+    track::models::{Track, TrackId},
     ui::{modals::tag_tracks::TagTracksModal, theme::Theme},
 };
 
@@ -15,6 +17,11 @@ pub enum AppModal {
     TagTracks(TagTracksModal),
 }
 
+#[derive(Default)]
+pub struct ModalController {
+    current_modal: Option<AppModal>,
+}
+
 #[derive(Debug, Clone)]
 pub enum Message {
     OpenManageTagsModal,
@@ -24,9 +31,9 @@ pub enum Message {
     TagTracksModal(tag_tracks::Message),
 }
 
-#[derive(Default)]
-pub struct ModalController {
-    current_modal: Option<AppModal>,
+pub enum Outcome {
+    Playback(PlaybackOutcome),
+    Modal(ModalOutcome),
 }
 
 impl ModalController {
@@ -79,7 +86,7 @@ impl ModalController {
     pub fn view<'a>(
         &self,
         theme: &Theme,
-        // tracks: &FxHashMap<TrackId, Track>,
+        tracks: &'a FxHashMap<TrackId, Track>,
     ) -> Option<Element<'a, Message, Theme, Renderer>> {
         let mut modal = None;
 
@@ -88,7 +95,11 @@ impl ModalController {
                 //modal = manage_tags_modal.view(theme)
             }
             AppModal::TagTracks(tag_tracks_modal) => {
-                modal = Some(tag_tracks_modal.view(theme).map(Message::TagTracksModal));
+                modal = Some(
+                    tag_tracks_modal
+                        .view(theme, tracks)
+                        .map(Message::TagTracksModal),
+                );
             }
         }
 

@@ -10,13 +10,21 @@ pub const PAUSE: char = '\u{E804}';
 pub const STOP: char = '\u{E807}';
 pub const PLAY_NEXT: char = '\u{E802}';
 pub const PLAY_PREVIOUS: char = '\u{E803}';
-pub const LOOP_TRACKLIST: char = '\u{E809}';
+pub const REPEAT: char = '\u{E809}';
 pub const SHUFFLE: char = '\u{E80A}';
-pub const NO_SHUFFLE: char = '\u{E801}';
+pub const SEQUENTIAL: char = '\u{E801}';
 pub const EQUALIZER: char = '\u{E800}';
 pub const MENU: char = '\u{E806}';
 pub const VOLUME: char = '\u{E808}';
 pub const VOLUME_MUTED: char = '\u{E80B}';
+// TODO: Add missing icons to font.
+pub const NO_REPEAT: char = '\u{E000}';
+pub const REPEAT_ONE: char = '\u{E000}';
+pub const CLOSE: char = '\u{E000}';
+pub const ARROW_LEFT: char = '\u{E000}';
+pub const ARROW_RIGHT: char = '\u{E000}';
+pub const CHEVRON_LEFT: char = '\u{E000}';
+pub const CHEVRON_RIGHT: char = '\u{E000}';
 
 pub fn icon<'a, Message, Theme, Renderer>(
     codepoint: char,

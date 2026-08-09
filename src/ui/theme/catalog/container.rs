@@ -20,6 +20,13 @@ impl Catalog for Theme {
     }
 }
 
+pub fn background_surface_raised(theme: &Theme) -> Style {
+    Style {
+        background: Some(theme.palette.surface_raised.into()),
+        ..Style::default()
+    }
+}
+
 pub fn context_menu(theme: &Theme) -> Style {
     Style {
         background: Some(theme.palette.surface_raised.into()),

@@ -223,12 +223,12 @@ impl PlaybackBar {
 
         let repeat_mode_icon = match playback_queue.repeat_mode {
             PlaybackRepeatMode::NoRepeat => icons::MENU, //Placeholder
-            PlaybackRepeatMode::Repeat => icons::LOOP_TRACKLIST,
+            PlaybackRepeatMode::Repeat => icons::REPEAT,
             PlaybackRepeatMode::RepeatOne => icons::PLAY, //Placeholder
         };
 
         let queue_order_icon = match playback_queue.order {
-            PlaybackQueueOrder::Sequential => icons::NO_SHUFFLE,
+            PlaybackQueueOrder::Sequential => icons::SEQUENTIAL,
             PlaybackQueueOrder::Shuffle => icons::SHUFFLE,
         };
 
