@@ -29,6 +29,9 @@ impl Sizes {
             radius_xs: 2.0,
             radius_sm: 4.0,
             radius_md: 8.0,
+            radius_lg: 12.0,
+            radius_xl: 16.0,
+            radius_xxl: 24.0,
             radius_pill: 9999.0,
         },
         component: ComponentSizes {
@@ -89,6 +92,9 @@ pub struct Borders {
     pub radius_xs: f32,
     pub radius_sm: f32,
     pub radius_md: f32,
+    pub radius_lg: f32,
+    pub radius_xl: f32,
+    pub radius_xxl: f32,
     pub radius_pill: f32,
 }
 

@@ -1,13 +1,17 @@
 use iced::{
-    Element, Renderer, Task,
-    widget::{center, container, text},
+    Element, Length, Renderer, Task,
+    widget::{center, column, container, text},
 };
 
 use crate::{
     event::Event,
     outcome::PlaybackOutcome,
     track::models::TrackId,
-    ui::theme::{Theme, catalog},
+    ui::{
+        modals::ModalController,
+        theme::{Theme, catalog},
+        widgets::separator::vertical_separator,
+    },
 };
 
 pub mod handler;
@@ -26,10 +30,12 @@ pub enum Message {
     // Resume
     // Pause
     //
+    Close,
 }
 
 pub enum Outcome {
     Playback(PlaybackOutcome),
+    Modal(ModalController),
 }
 
 impl TagTracksModal {
@@ -52,10 +58,37 @@ impl TagTracksModal {
     }
 
     pub fn view<'a>(&self, _theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
-        container(center(text("Hi")))
-            .width(100.0)
-            .height(80.0)
-            .style(catalog::container::context_menu)
-            .into()
+        let width = 1000.0;
+        let height = 770.0;
+
+        container(
+            column![
+                container(text("Header")).height(128.0).width(Length::Fill),
+                vertical_separator(),
+                container(text("Playback"))
+                    .height(100.0)
+                    .width(Length::Fill),
+                vertical_separator(),
+                container(text("Tag Groups"))
+                    .height(140.0)
+                    .width(Length::Fill),
+                vertical_separator(),
+                container(text("Tags"))
+                    .height(Length::Fill)
+                    .width(Length::Fill),
+                vertical_separator(),
+                container(text("Keyboard controls"))
+                    .height(140.0)
+                    .width(Length::Fill),
+                vertical_separator(),
+                container(text("Footer")).height(84.0).width(Length::Fill),
+            ]
+            .width(Length::Fill)
+            .height(Length::Fill),
+        )
+        .width(width)
+        .height(height)
+        .style(catalog::container::modal)
+        .into()
     }
 }

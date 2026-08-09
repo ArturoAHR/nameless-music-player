@@ -38,9 +38,34 @@ pub fn context_menu(theme: &Theme) -> Style {
     }
 }
 
+pub fn modal(theme: &Theme) -> Style {
+    Style {
+        background: Some(theme.palette.surface.into()),
+        text_color: None,
+        border: Border {
+            color: theme.palette.border,
+            width: theme.sizes.border.width,
+            radius: Radius::from(theme.sizes.border.radius_lg),
+        },
+        shadow: Shadow {
+            color: Color::BLACK,
+            blur_radius: theme.sizes.border.radius_xxl,
+            offset: Vector::new(theme.sizes.space.md, theme.sizes.space.md),
+        },
+        ..Style::default()
+    }
+}
+
 pub fn modal_backdrop(_theme: &Theme) -> Style {
     Style {
         background: Some(with_alpha(Color::BLACK, 0.8).into()),
+        ..Style::default()
+    }
+}
+
+pub fn separator(theme: &Theme) -> Style {
+    Style {
+        background: Some(theme.palette.border.into()),
         ..Style::default()
     }
 }
