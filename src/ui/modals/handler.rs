@@ -12,7 +12,13 @@ use crate::{
 
 impl App {
     pub fn view_modal(&self) -> Option<Element<'_, app::Message, Theme, Renderer>> {
-        let modal = self.modal_controller.view(&self.theme, &self.tracks)?;
+        let modal = self.modal_controller.view(
+            &self.theme,
+            &self.tracks,
+            &self.tags,
+            &self.tag_groups,
+            &self.track_tag_index,
+        )?;
 
         Some(modal.map(ui::Message::Modal).map(app::Message::Ui))
     }

@@ -221,7 +221,7 @@ impl App {
                 // TODO: Add loading state to main pane before setting the displayed tracks
                 self.displayed_track_ids = self.tracks.keys().copied().collect();
 
-                info!("Tracks loaded successfully");
+                // info!("Tracks loaded successfully");
             }
             Message::LoadedTracks(Err(error)) => {
                 error!("Failed to load tracks: {error}");

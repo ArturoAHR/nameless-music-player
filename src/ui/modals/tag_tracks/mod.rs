@@ -7,12 +7,15 @@ use rustc_hash::FxHashMap;
 use crate::{
     event::Event,
     outcome::{ModalOutcome, PlaybackOutcome, TagOutcome},
-    tag::models::{Tag, TagGroup},
+    tag::{
+        index::TrackTagIndex,
+        models::{Tag, TagGroup},
+    },
     track::models::{Track, TrackId},
     ui::{
         modals::tag_tracks::{
             tag::{get_tag_group_tags, get_tag_index},
-            widgets::header,
+            widgets::{header, tag_group_list},
         },
         theme::{Theme, catalog},
         widgets::separator::vertical_separator,
@@ -38,6 +41,9 @@ pub enum Message {
     // Pause
     //
     Close,
+
+    SelectTabGroup(usize),
+
     Keyboard(keyboard::Event),
 }
 
@@ -69,6 +75,9 @@ impl TagTracksModal {
 
         match message {
             Message::Close => outcomes.push(Outcome::Modal(ModalOutcome::CloseModal)),
+            Message::SelectTabGroup(tab_group_index) => {
+                self.tag_groups_cursor = tab_group_index;
+            }
             Message::Keyboard(keyboard::Event::KeyPressed {
                 key: keyboard::Key::Character(character),
                 repeat: false,
@@ -97,6 +106,9 @@ impl TagTracksModal {
         &self,
         theme: &Theme,
         tracks: &'a FxHashMap<TrackId, Track>,
+        tags: &'a [Tag],
+        tag_groups: &'a [TagGroup],
+        track_tag_index: &'a TrackTagIndex,
     ) -> Element<'a, Message, Theme, Renderer> {
         let width = 1000.0;
         let height = 770.0;
@@ -105,9 +117,10 @@ impl TagTracksModal {
             .track_tagging_queue
             .get(self.track_tagging_queue_cursor)
             .unwrap();
-        let track = tracks.get(current_tagging_track_id).unwrap();
+        let track = tracks.get(current_tagging_track_id);
         let track_number = self.track_tagging_queue_cursor + 1;
         let track_total = self.track_tagging_queue.len();
+        let track_tags = track_tag_index.get_track_tags(*current_tagging_track_id);
 
         container(
             column![
@@ -117,9 +130,7 @@ impl TagTracksModal {
                     .height(100.0)
                     .width(Length::Fill),
                 vertical_separator(),
-                container(text("Tag Groups"))
-                    .height(140.0)
-                    .width(Length::Fill),
+                tag_group_list(theme, tag_groups, self.tag_groups_cursor),
                 vertical_separator(),
                 container(text("Tags"))
                     .height(Length::Fill)

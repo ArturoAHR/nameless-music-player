@@ -5,7 +5,10 @@ use crate::{
     app::{self},
     event::Event,
     outcome::{ModalOutcome, PlaybackOutcome, TagOutcome},
-    tag::models::{Tag, TagGroup},
+    tag::{
+        index::TrackTagIndex,
+        models::{Tag, TagGroup},
+    },
     track::models::{Track, TrackId},
     ui::{modals::tag_tracks::TagTracksModal, theme::Theme},
 };
@@ -106,6 +109,9 @@ impl ModalController {
         &self,
         theme: &Theme,
         tracks: &'a FxHashMap<TrackId, Track>,
+        tags: &'a [Tag],
+        tag_groups: &'a [TagGroup],
+        track_tag_index: &'a TrackTagIndex,
     ) -> Option<Element<'a, Message, Theme, Renderer>> {
         let mut modal = None;
 
@@ -116,7 +122,7 @@ impl ModalController {
             AppModal::TagTracks(tag_tracks_modal) => {
                 modal = Some(
                     tag_tracks_modal
-                        .view(theme, tracks)
+                        .view(theme, tracks, tags, tag_groups, track_tag_index)
                         .map(Message::TagTracksModal),
                 );
             }
