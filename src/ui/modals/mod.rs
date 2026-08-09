@@ -1,4 +1,4 @@
-use iced::{Element, Renderer, Task};
+use iced::{Element, Renderer, Task, keyboard};
 use rustc_hash::FxHashMap;
 
 use crate::{
@@ -24,6 +24,8 @@ pub struct ModalController {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    Keyboard(keyboard::Event),
+
     OpenManageTagsModal,
     OpenTagTracksModal(Vec<TrackId>),
     CloseModal,
@@ -51,6 +53,13 @@ impl ModalController {
             Message::CloseModal => {
                 self.current_modal = None;
             }
+            Message::Keyboard(event)
+                if let Some(AppModal::TagTracks(_)) = self.current_modal.as_ref() =>
+            {
+                (task, outcomes) =
+                    self.handle_tag_tracks_modal(tag_tracks::Message::Keyboard(event));
+            }
+            Message::Keyboard(_) => {}
             // Message::ManageTagsModal(message) => {
             //     self.handle_manage_tags_modal(message);
             // }

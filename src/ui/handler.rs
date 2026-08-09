@@ -1,4 +1,4 @@
-use iced::{Size, Task, window};
+use iced::{Size, Task, keyboard, window};
 
 use crate::{
     app::{self, App},
@@ -17,6 +17,7 @@ pub enum Message {
     SplitDragged(PaneSplit, f64),
     WindowResized(Option<window::Id>, Size),
     GetWindowId(window::Id),
+    Keyboard(keyboard::Event),
 
     NavigationBar(navigation_bar::Message),
     ExplorerPane(explorer_pane::Message),
@@ -92,6 +93,7 @@ impl App {
                 }
             }
             Message::GetWindowId(window_id) => self.main_window_id = Some(window_id),
+            Message::Keyboard(event) => task = self.handle_keyboard(event),
 
             Message::NavigationBar(message) => task = self.handle_navigation_bar(message),
             Message::ExplorerPane(message) => task = self.handle_explorer_pane(message),
@@ -107,5 +109,13 @@ impl App {
         }
 
         task
+    }
+
+    pub fn handle_keyboard(&mut self, event: keyboard::Event) -> Task<app::Message> {
+        if self.modal_controller.is_modal_active() {
+            return self.handle_modal(modals::Message::Keyboard(event));
+        }
+
+        Task::none()
     }
 }

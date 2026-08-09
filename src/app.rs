@@ -5,7 +5,7 @@ use rustc_hash::FxHashMap;
 use sqlx::SqlitePool;
 
 use iced::{
-    Element, Length, Size, Subscription, Task,
+    Element, Length, Size, Subscription, Task, keyboard,
     time::{every, milliseconds},
     widget::{column, container},
     window,
@@ -350,6 +350,10 @@ impl App {
         let mut subscriptions = vec![
             Subscription::run(watch_default_device),
             Subscription::run(audio_pipeline_thread_events),
+            window::resize_events().map(|(window_id, size)| {
+                Message::Ui(ui::Message::WindowResized(Some(window_id), size))
+            }),
+            keyboard::listen().map(|event| Message::Ui(ui::Message::Keyboard(event))),
         ];
 
         if matches!(
@@ -364,10 +368,6 @@ impl App {
                 }),
             );
         }
-
-        subscriptions.push(window::resize_events().map(|(window_id, size)| {
-            Message::Ui(ui::Message::WindowResized(Some(window_id), size))
-        }));
 
         Subscription::batch(subscriptions)
     }

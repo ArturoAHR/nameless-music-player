@@ -1,8 +1,9 @@
 use iced::{
-    Element, Length, Renderer, Task,
+    Element, Length, Renderer, Task, keyboard,
     widget::{column, container, text},
 };
 use rustc_hash::FxHashMap;
+use tracing::info;
 
 use crate::{
     event::Event,
@@ -33,6 +34,7 @@ pub enum Message {
     // Pause
     //
     Close,
+    Keyboard(keyboard::Event),
 }
 
 pub enum Outcome {
@@ -57,6 +59,12 @@ impl TagTracksModal {
 
         match message {
             Message::Close => outcomes.push(Outcome::Modal(ModalOutcome::CloseModal)),
+            Message::Keyboard(keyboard::Event::KeyPressed {
+                key, repeat: false, ..
+            }) => {
+                info!("{key:?}");
+            }
+            Message::Keyboard(_) => {}
         }
 
         (task, outcomes)
