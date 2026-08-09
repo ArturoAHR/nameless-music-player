@@ -33,6 +33,16 @@ pub struct TagGroup {
     pub deleted_at: Option<i64>,
 }
 
+impl Identifiable for TagGroup {
+    type Identifier = i64;
+
+    fn id(&self) -> &Self::Identifier {
+        &self.id
+    }
+}
+
+pub type TagGroupId = <TagGroup as Identifiable>::Identifier;
+
 #[enum_def(table_name = "track_tag")]
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct TrackTag {

@@ -3,20 +3,24 @@ use iced::{
     widget::{column, container, text},
 };
 use rustc_hash::FxHashMap;
-use tracing::info;
 
 use crate::{
     event::Event,
-    outcome::{ModalOutcome, PlaybackOutcome},
+    outcome::{ModalOutcome, PlaybackOutcome, TagOutcome},
+    tag::models::{Tag, TagGroup},
     track::models::{Track, TrackId},
     ui::{
-        modals::tag_tracks::widgets::header,
+        modals::tag_tracks::{
+            tag::{get_tag_group_tags, get_tag_index},
+            widgets::header,
+        },
         theme::{Theme, catalog},
         widgets::separator::vertical_separator,
     },
 };
 
 pub mod handler;
+pub mod tag;
 pub mod widgets;
 
 pub struct TagTracksModal {
@@ -40,6 +44,7 @@ pub enum Message {
 pub enum Outcome {
     Playback(PlaybackOutcome),
     Modal(ModalOutcome),
+    Tag(TagOutcome),
 }
 
 impl TagTracksModal {
@@ -53,16 +58,30 @@ impl TagTracksModal {
         }
     }
 
-    pub fn update(&mut self, message: Message) -> (Task<Message>, Vec<Outcome>) {
+    pub fn update(
+        &mut self,
+        message: Message,
+        tags: &[Tag],
+        tag_groups: &[TagGroup],
+    ) -> (Task<Message>, Vec<Outcome>) {
         let task = Task::none();
         let mut outcomes = Vec::new();
 
         match message {
             Message::Close => outcomes.push(Outcome::Modal(ModalOutcome::CloseModal)),
             Message::Keyboard(keyboard::Event::KeyPressed {
-                key, repeat: false, ..
-            }) => {
-                info!("{key:?}");
+                key: keyboard::Key::Character(character),
+                repeat: false,
+                ..
+            }) if let Some(character) = character.chars().next()
+                && let Some(track_id) = self
+                    .track_tagging_queue
+                    .get(self.track_tagging_queue_cursor)
+                && let Some(tag_group) = tag_groups.get(self.tag_groups_cursor)
+                && let Some(tag_index) = get_tag_index(&character)
+                && let Some(tag) = get_tag_group_tags(tags, tag_group.id).get(tag_index) =>
+            {
+                outcomes.push(Outcome::Tag(TagOutcome::ToggleTag(*track_id, tag.id)));
             }
             Message::Keyboard(_) => {}
         }

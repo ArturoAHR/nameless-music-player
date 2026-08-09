@@ -18,7 +18,9 @@ impl App {
     }
 
     pub fn handle_modal(&mut self, message: Message) -> Task<app::Message> {
-        let (task, outcomes) = self.modal_controller.update(message);
+        let (task, outcomes) = self
+            .modal_controller
+            .update(message, &self.tags, &self.tag_groups);
 
         let component_task = task.map(ui::Message::Modal).map(app::Message::Ui);
 
@@ -30,8 +32,9 @@ impl App {
 
         for outcome in outcomes {
             let outcome = match outcome {
-                Outcome::Playback(playback_outcome) => app::Outcome::Playback(playback_outcome),
-                Outcome::Modal(modal_outcome) => app::Outcome::Modal(modal_outcome),
+                Outcome::Playback(outcome) => app::Outcome::Playback(outcome),
+                Outcome::Modal(outcome) => app::Outcome::Modal(outcome),
+                Outcome::Tag(outcome) => app::Outcome::Tag(outcome),
             };
 
             let outcome_task = self.handle_outcome(outcome);

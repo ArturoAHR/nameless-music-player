@@ -1,6 +1,7 @@
 use iced::Task;
 
 use crate::{
+    tag::models::{Tag, TagGroup},
     track::models::TrackId,
     ui::modals::{
         self, AppModal, ModalController,
@@ -12,12 +13,14 @@ impl ModalController {
     pub fn handle_tag_tracks_modal(
         &mut self,
         message: Message,
+        tags: &[Tag],
+        tag_groups: &[TagGroup],
     ) -> (Task<modals::Message>, Vec<modals::Outcome>) {
         let Some(AppModal::TagTracks(tag_tracks_modal)) = self.current_modal.as_mut() else {
             return (Task::none(), Vec::new());
         };
 
-        let (task, outcomes) = tag_tracks_modal.update(message);
+        let (task, outcomes) = tag_tracks_modal.update(message, tags, tag_groups);
 
         let modal_task = task.map(modals::Message::TagTracksModal);
 
@@ -26,6 +29,7 @@ impl ModalController {
             .map(|outcome| match outcome {
                 Outcome::Playback(outcome) => modals::Outcome::Playback(outcome),
                 Outcome::Modal(outcome) => modals::Outcome::Modal(outcome),
+                Outcome::Tag(outcome) => modals::Outcome::Tag(outcome),
             })
             .collect();
 

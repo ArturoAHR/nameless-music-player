@@ -4,7 +4,8 @@ use rustc_hash::FxHashMap;
 use crate::{
     app::{self},
     event::Event,
-    outcome::{ModalOutcome, PlaybackOutcome},
+    outcome::{ModalOutcome, PlaybackOutcome, TagOutcome},
+    tag::models::{Tag, TagGroup},
     track::models::{Track, TrackId},
     ui::{modals::tag_tracks::TagTracksModal, theme::Theme},
 };
@@ -36,10 +37,16 @@ pub enum Message {
 pub enum Outcome {
     Playback(PlaybackOutcome),
     Modal(ModalOutcome),
+    Tag(TagOutcome),
 }
 
 impl ModalController {
-    pub fn update(&mut self, message: Message) -> (Task<Message>, Vec<Outcome>) {
+    pub fn update(
+        &mut self,
+        message: Message,
+        tags: &[Tag],
+        tag_groups: &[TagGroup],
+    ) -> (Task<Message>, Vec<Outcome>) {
         let mut task = Task::none();
         let mut outcomes = Vec::new();
 
@@ -56,15 +63,18 @@ impl ModalController {
             Message::Keyboard(event)
                 if let Some(AppModal::TagTracks(_)) = self.current_modal.as_ref() =>
             {
-                (task, outcomes) =
-                    self.handle_tag_tracks_modal(tag_tracks::Message::Keyboard(event));
+                (task, outcomes) = self.handle_tag_tracks_modal(
+                    tag_tracks::Message::Keyboard(event),
+                    tags,
+                    tag_groups,
+                );
             }
             Message::Keyboard(_) => {}
             // Message::ManageTagsModal(message) => {
             //     self.handle_manage_tags_modal(message);
             // }
             Message::TagTracksModal(message) => {
-                (task, outcomes) = self.handle_tag_tracks_modal(message);
+                (task, outcomes) = self.handle_tag_tracks_modal(message, tags, tag_groups);
             }
         }
 

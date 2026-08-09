@@ -1,10 +1,12 @@
 use iced::Task;
-use tracing::instrument;
+use tracing::{instrument, warn};
 
 use crate::{
     app::{App, Message},
     error::AppError,
+    outcome::TagOutcome::SaveTags,
     playback::{controller::PlaybackControllerStatus, queue::entry::PlaybackQueueEntryId},
+    tag::models::TagId,
     track::models::TrackId,
 };
 
@@ -12,6 +14,7 @@ use crate::{
 pub enum Outcome {
     Playback(PlaybackOutcome),
     Modal(ModalOutcome),
+    Tag(TagOutcome),
 }
 
 #[derive(Debug, Clone)]
@@ -39,11 +42,18 @@ pub enum PlaybackOutcome {
     QueueNext(Vec<TrackId>),
 }
 
+#[derive(Debug, Clone)]
+pub enum TagOutcome {
+    ToggleTag(TrackId, TagId),
+    SaveTags,
+}
+
 impl App {
     pub fn handle_outcome(&mut self, outcome: Outcome) -> Task<Message> {
         let outcome_task = match outcome {
             Outcome::Playback(outcome) => self.handle_playback_outcome(outcome),
             Outcome::Modal(outcome) => self.handle_modal_outcome(outcome),
+            Outcome::Tag(outcome) => self.handle_tag_outcome(outcome),
         };
 
         match outcome_task {
@@ -153,6 +163,22 @@ impl App {
             ModalOutcome::OpenTagTracksModal(track_tagging_queue) => {
                 self.modal_controller
                     .open_tag_tracks_modal(track_tagging_queue);
+            }
+        }
+
+        Ok(task)
+    }
+
+    #[instrument(skip(self))]
+    pub fn handle_tag_outcome(&mut self, outcome: TagOutcome) -> Result<Task<Message>, AppError> {
+        let task = Task::none();
+
+        match outcome {
+            TagOutcome::ToggleTag(track_id, tag_id) => {
+                self.track_tag_index.toggle_track_tag(track_id, tag_id);
+            }
+            SaveTags => {
+                warn!("Saving current track tag index is still not implemented");
             }
         }
 
