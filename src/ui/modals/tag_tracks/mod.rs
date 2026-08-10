@@ -1,5 +1,5 @@
 use iced::{
-    Element, Length, Renderer, Task, keyboard,
+    Element, Length, Padding, Renderer, Task, keyboard,
     widget::{column, container, text},
 };
 use rustc_hash::FxHashMap;
@@ -9,13 +9,13 @@ use crate::{
     outcome::{ModalOutcome, PlaybackOutcome, TagOutcome},
     tag::{
         index::TrackTagIndex,
-        models::{Tag, TagGroup},
+        models::{Tag, TagGroup, TagId},
     },
     track::models::{Track, TrackId},
     ui::{
         modals::tag_tracks::{
             tag::{get_tag_group_tags, get_tag_index},
-            widgets::{header, tag_group_list},
+            widgets::{header, tag_group_list, tag_list},
         },
         theme::{Theme, catalog},
         widgets::separator::vertical_separator,
@@ -43,6 +43,7 @@ pub enum Message {
     Close,
 
     SelectTabGroup(usize),
+    ToggleTag(TagId),
 
     Keyboard(keyboard::Event),
 }
@@ -78,6 +79,13 @@ impl TagTracksModal {
             Message::SelectTabGroup(tab_group_index) => {
                 self.tag_groups_cursor = tab_group_index;
             }
+            Message::ToggleTag(tag_id)
+                if let Some(track_id) = self
+                    .track_tagging_queue
+                    .get(self.track_tagging_queue_cursor) =>
+            {
+                outcomes.push(Outcome::Tag(TagOutcome::ToggleTag(*track_id, tag_id)));
+            }
             Message::Keyboard(keyboard::Event::KeyPressed {
                 key: keyboard::Key::Character(character),
                 repeat: false,
@@ -92,7 +100,7 @@ impl TagTracksModal {
             {
                 outcomes.push(Outcome::Tag(TagOutcome::ToggleTag(*track_id, tag.id)));
             }
-            Message::Keyboard(_) => {}
+            Message::ToggleTag(_) | Message::Keyboard(_) => {}
         }
 
         (task, outcomes)
@@ -128,13 +136,18 @@ impl TagTracksModal {
                 vertical_separator(),
                 container(text("Playback"))
                     .height(100.0)
-                    .width(Length::Fill),
+                    .width(Length::Fill)
+                    .style(catalog::container::background_surface_raised),
                 vertical_separator(),
                 tag_group_list(theme, tag_groups, self.tag_groups_cursor),
                 vertical_separator(),
-                container(text("Tags"))
-                    .height(Length::Fill)
-                    .width(Length::Fill),
+                tag_list(
+                    theme,
+                    tag_groups,
+                    tags,
+                    self.tag_groups_cursor,
+                    track_tags.map(Vec::as_slice)
+                ),
                 vertical_separator(),
                 container(text("Keyboard controls"))
                     .height(140.0)
@@ -143,10 +156,12 @@ impl TagTracksModal {
                 container(text("Footer")).height(84.0).width(Length::Fill),
             ]
             .width(Length::Fill)
-            .height(Length::Fill),
+            .height(Length::Shrink),
         )
         .width(width)
-        .height(height)
+        .height(Length::Shrink)
+        // Offsets inner containers so they don't overlap modal container border.
+        .padding(Padding::from(1.0))
         .style(catalog::container::modal)
         .into()
     }

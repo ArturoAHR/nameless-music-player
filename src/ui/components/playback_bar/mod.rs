@@ -250,7 +250,7 @@ impl PlaybackBar {
                 button(icon(queue_order_icon)).on_press(Message::CycleQueueOrder),
             ]
             .align_y(Alignment::Center)
-            .spacing(theme.sizes.space.xxl),
+            .spacing(theme.sizes.space.xxxl),
         )
         .height(Length::Fixed(theme.sizes.component.playback_bar_height))
         .width(Length::Fill)

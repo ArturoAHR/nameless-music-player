@@ -14,7 +14,9 @@ impl Sizes {
             md: 8.0,
             lg: 12.0,
             xl: 16.0,
-            xxl: 24.0,
+            xxl: 20.0,
+            xxxl: 24.0,
+            xxxxl: 28.0,
         },
         font: Typography {
             caption: 11.0,
@@ -31,7 +33,8 @@ impl Sizes {
             radius_md: 8.0,
             radius_lg: 12.0,
             radius_xl: 16.0,
-            radius_xxl: 24.0,
+            radius_xxl: 20.0,
+            radius_xxxl: 24.0,
             radius_pill: 9999.0,
         },
         component: ComponentSizes {
@@ -74,6 +77,8 @@ pub struct Spacing {
     pub lg: f32,
     pub xl: f32,
     pub xxl: f32,
+    pub xxxl: f32,
+    pub xxxxl: f32,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -95,6 +100,7 @@ pub struct Borders {
     pub radius_lg: f32,
     pub radius_xl: f32,
     pub radius_xxl: f32,
+    pub radius_xxxl: f32,
     pub radius_pill: f32,
 }
 

@@ -4,7 +4,10 @@ use iced::{
     widget::container::{Catalog, Style},
 };
 
-use crate::ui::theme::{Theme, color::with_alpha};
+use crate::ui::theme::{
+    Theme,
+    color::{mix, with_alpha},
+};
 
 pub type StyleFn<'a> = Box<dyn Fn(&Theme) -> Style + 'a>;
 
@@ -56,7 +59,7 @@ pub fn modal(theme: &Theme) -> Style {
         },
         shadow: Shadow {
             color: Color::BLACK,
-            blur_radius: theme.sizes.border.radius_xxl,
+            blur_radius: theme.sizes.border.radius_xxxl,
             offset: Vector::new(theme.sizes.space.md, theme.sizes.space.md),
         },
         ..Style::default()
@@ -70,9 +73,44 @@ pub fn modal_backdrop(_theme: &Theme) -> Style {
     }
 }
 
+pub fn modal_header(theme: &Theme) -> Style {
+    Style {
+        background: Some(theme.palette.surface_raised.into()),
+        border: Border {
+            radius: Radius::default().top(theme.sizes.border.radius_lg),
+            ..Border::default()
+        },
+        ..Style::default()
+    }
+}
+
 pub fn separator(theme: &Theme) -> Style {
     Style {
         background: Some(theme.palette.border.into()),
+        ..Style::default()
+    }
+}
+
+pub fn badge(theme: &Theme) -> Style {
+    Style {
+        background: Some(theme.palette.surface.into()),
+        border: Border {
+            color: theme.palette.border,
+            width: 1.0,
+            radius: Radius::from(theme.sizes.border.radius_sm),
+        },
+        ..Style::default()
+    }
+}
+
+pub fn active_badge(theme: &Theme) -> Style {
+    Style {
+        background: Some(mix(theme.palette.surface, theme.palette.accent, 0.2).into()),
+        border: Border {
+            color: theme.palette.accent,
+            width: 1.0,
+            radius: Radius::from(theme.sizes.border.radius_sm),
+        },
         ..Style::default()
     }
 }
