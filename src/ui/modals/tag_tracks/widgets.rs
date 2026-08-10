@@ -1,14 +1,19 @@
 use iced::{
     Element, Font, Length, Padding, Renderer, alignment,
-    widget::{Space, button, center, column, container, row, text},
+    widget::{Space, button, center, column, container, row, slider, text},
 };
+use rustc_hash::FxHashMap;
 
 use crate::{
     tag::models::{Tag, TagGroup, TagId},
-    track::models::Track,
+    track::{
+        models::{Track, TrackId},
+        utils::get_track_duration_label,
+    },
     ui::{
         modals::tag_tracks::{Message, tag::get_tag_keys},
         theme::{Theme, catalog},
+        utils::label::format_duration,
         widgets::icons::{self, icon},
     },
 };
@@ -44,6 +49,61 @@ pub fn header<'a>(
         theme.sizes.space.xxxxl,
     ]))
     .style(catalog::container::modal_header)
+    .into()
+}
+
+#[allow(clippy::implicit_hasher)]
+pub fn playback<'a>(
+    theme: &Theme,
+    tracks: &FxHashMap<TrackId, Track>,
+    current_tagging_track_id: Option<&TrackId>,
+    current_position: f64,
+) -> Element<'a, Message, Theme, Renderer> {
+    let mut total_frames = 1.0;
+    let mut current_frames = 0.0;
+
+    let (track_duration_timestamp, current_position_timestamp) = current_tagging_track_id
+        .and_then(|track_id| tracks.get(track_id))
+        .map_or_else(
+            || ("0:00".to_owned(), "0:00".to_owned()),
+            |track| {
+                total_frames = track.frames as f64;
+                current_frames = current_position;
+
+                (
+                    get_track_duration_label(track),
+                    format_duration((current_frames / track.sample_rate as f64).floor() as u64),
+                )
+            },
+        );
+
+    container(
+        column![
+            row![
+                text(current_position_timestamp)
+                    .size(theme.sizes.font.small)
+                    .color(theme.palette.text_subtle),
+                Space::new().width(Length::Fill),
+                text(track_duration_timestamp)
+                    .size(theme.sizes.font.small)
+                    .color(theme.palette.text_subtle)
+            ],
+            slider(
+                0.0..=total_frames,
+                current_frames,
+                Message::PlaybackScrubbed
+            )
+            .on_release(Message::PlaybackSeeked)
+        ]
+        .spacing(theme.sizes.space.md),
+    )
+    .padding(Padding::from([
+        theme.sizes.space.xxl,
+        theme.sizes.space.xxxxl,
+    ]))
+    .height(Length::Shrink)
+    .width(Length::Fill)
+    .style(catalog::container::background_surface_raised)
     .into()
 }
 

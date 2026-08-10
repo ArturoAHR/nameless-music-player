@@ -15,7 +15,7 @@ use crate::{
     ui::{
         modals::tag_tracks::{
             tag::{get_tag_group_tags, get_tag_index},
-            widgets::{header, tag_group_list, tag_list},
+            widgets::{header, playback, tag_group_list, tag_list},
         },
         theme::{Theme, catalog},
         widgets::separator::vertical_separator,
@@ -46,6 +46,8 @@ pub enum Message {
     ToggleTag(TagId),
 
     Keyboard(keyboard::Event),
+    PlaybackScrubbed(f64),
+    PlaybackSeeked,
 }
 
 pub enum Outcome {
@@ -86,6 +88,10 @@ impl TagTracksModal {
             {
                 outcomes.push(Outcome::Tag(TagOutcome::ToggleTag(*track_id, tag_id)));
             }
+            Message::PlaybackScrubbed(position) => {
+                self.current_playback_position = position;
+            }
+            Message::PlaybackSeeked => {}
             Message::Keyboard(keyboard::Event::KeyPressed {
                 key: keyboard::Key::Character(character),
                 repeat: false,
@@ -134,10 +140,12 @@ impl TagTracksModal {
             column![
                 header(theme, track, track_number, track_total),
                 vertical_separator(),
-                container(text("Playback"))
-                    .height(100.0)
-                    .width(Length::Fill)
-                    .style(catalog::container::background_surface_raised),
+                playback(
+                    theme,
+                    tracks,
+                    Some(current_tagging_track_id),
+                    self.current_playback_position
+                ),
                 vertical_separator(),
                 tag_group_list(theme, tag_groups, self.tag_groups_cursor),
                 vertical_separator(),

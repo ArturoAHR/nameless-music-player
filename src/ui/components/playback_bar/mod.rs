@@ -19,7 +19,7 @@ use crate::{
     },
     ui::{
         components::playback_bar::widgets::volume_bar,
-        theme::Theme,
+        theme::{Theme, catalog},
         utils::label::format_duration,
         widgets::icons::{self, icon},
     },
@@ -256,10 +256,7 @@ impl PlaybackBar {
         .width(Length::Fill)
         .align_y(Alignment::Center)
         .padding(Padding::from(theme.sizes.space.xl))
-        .style(|theme: &Theme| container::Style {
-            background: Some(theme.palette.surface_raised.into()),
-            ..container::Style::default()
-        })
+        .style(catalog::container::background_surface_raised)
         .into()
     }
 }

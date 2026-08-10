@@ -80,7 +80,7 @@ pub fn toggle(theme: &Theme, status: Status) -> Style {
         background,
         text_color,
         border: Border {
-            radius: Radius::from(theme.sizes.border.radius_md),
+            radius: Radius::from(theme.sizes.border.radius_lg),
             color: theme.palette.border,
             width: 1.0,
         },
@@ -106,7 +106,7 @@ pub fn active_toggle(theme: &Theme, status: Status) -> Style {
         background,
         text_color,
         border: Border {
-            radius: Radius::from(theme.sizes.border.radius_md),
+            radius: Radius::from(theme.sizes.border.radius_lg),
             color: theme.palette.accent,
             width: 1.0,
         },

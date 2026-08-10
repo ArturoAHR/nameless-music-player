@@ -97,7 +97,7 @@ pub fn badge(theme: &Theme) -> Style {
         border: Border {
             color: theme.palette.border,
             width: 1.0,
-            radius: Radius::from(theme.sizes.border.radius_sm),
+            radius: Radius::from(theme.sizes.border.radius_md),
         },
         ..Style::default()
     }
@@ -109,7 +109,7 @@ pub fn active_badge(theme: &Theme) -> Style {
         border: Border {
             color: theme.palette.accent,
             width: 1.0,
-            radius: Radius::from(theme.sizes.border.radius_sm),
+            radius: Radius::from(theme.sizes.border.radius_md),
         },
         ..Style::default()
     }
