@@ -1,6 +1,7 @@
 use iced::Task;
 
 use crate::{
+    playback::controller::PlaybackControllerStatus,
     tag::models::{Tag, TagGroup},
     track::models::TrackId,
     ui::modals::{
@@ -15,12 +16,14 @@ impl ModalController {
         message: Message,
         tags: &[Tag],
         tag_groups: &[TagGroup],
+        playback_controller_status: &PlaybackControllerStatus,
     ) -> (Task<modals::Message>, Vec<modals::Outcome>) {
         let Some(AppModal::TagTracks(tag_tracks_modal)) = self.current_modal.as_mut() else {
             return (Task::none(), Vec::new());
         };
 
-        let (task, outcomes) = tag_tracks_modal.update(message, tags, tag_groups);
+        let (task, outcomes) =
+            tag_tracks_modal.update(message, tags, tag_groups, playback_controller_status);
 
         let modal_task = task.map(modals::Message::TagTracksModal);
 

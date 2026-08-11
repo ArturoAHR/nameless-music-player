@@ -137,7 +137,7 @@ impl AudioPipeline {
 
         self.configuration
             .event_emitter
-            .emit(AudioPipelineThreadEvent::ActiveTrackChanged { track_id });
+            .emit(AudioPipelineThreadEvent::ActiveTrackChanged(track_id));
 
         self.set_status(AudioPipelineStatus::Active);
 

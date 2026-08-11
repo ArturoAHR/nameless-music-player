@@ -24,9 +24,12 @@ impl App {
     }
 
     pub fn handle_modal(&mut self, message: Message) -> Task<app::Message> {
-        let (task, outcomes) = self
-            .modal_controller
-            .update(message, &self.tags, &self.tag_groups);
+        let (task, outcomes) = self.modal_controller.update(
+            message,
+            &self.tags,
+            &self.tag_groups,
+            &self.playback_controller.status,
+        );
 
         let component_task = task.map(ui::Message::Modal).map(app::Message::Ui);
 
@@ -53,7 +56,7 @@ impl App {
 
     pub fn notify_modal(&mut self, event: &Event) -> Task<app::Message> {
         self.modal_controller
-            .on_event(event)
+            .on_event(event, &self.current_playback_owner)
             .map(ui::Message::Modal)
             .map(app::Message::Ui)
     }

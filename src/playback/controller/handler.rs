@@ -2,7 +2,7 @@ use iced::Task;
 use tracing::{error, instrument};
 
 use crate::{
-    app::{self, App},
+    app::{self, App, PlaybackOwner},
     error::AppError,
     event::Event,
     playback::{
@@ -60,12 +60,19 @@ impl App {
 
                 #[allow(clippy::single_match)]
                 match event {
-                    AudioPipelineThreadEvent::TrackFinished => match self.play_next_track() {
-                        Ok(event_tasks) => task = event_tasks,
-                        Err(error) => {
-                            error!("Could not play next track: {error}");
+                    AudioPipelineThreadEvent::TrackFinished
+                        if matches!(self.current_playback_owner, PlaybackOwner::PlaybackBar) =>
+                    {
+                        match self.play_next_track() {
+                            Ok(event_tasks) => task = event_tasks,
+                            Err(error) => {
+                                error!("Could not play next track: {error}");
+                            }
                         }
-                    },
+                    }
+                    AudioPipelineThreadEvent::ActiveTrackChanged(track_id) => {
+                        task = self.broadcast(Event::ActiveTrackChanged(Some(track_id)));
+                    }
                     _ => {}
                 }
             }
@@ -110,12 +117,62 @@ impl App {
 
         let event_tasks = self.broadcast(Event::AttemptedPlayingTrack);
 
-        self.playback_controller.play(track)?;
-
         self.playback_generation_threshold = self.playback_controller.get_audio_engine_generation();
+
+        self.playback_controller.play(track)?;
 
         self.current_playing_track_id = Some(track_id);
 
         Ok(event_tasks)
+    }
+
+    #[instrument(skip(self))]
+    pub fn seek_timestamp(
+        &mut self,
+        timestamp: u64,
+        post_seek_status: PlaybackControllerStatus,
+    ) -> Result<(), AppError> {
+        self.playback_generation_threshold = self.playback_controller.get_audio_engine_generation();
+
+        self.playback_controller.seek(timestamp)?;
+
+        match post_seek_status {
+            PlaybackControllerStatus::Playing => self.playback_controller.resume()?,
+            PlaybackControllerStatus::Stopped => self.playback_controller.pause()?,
+        }
+
+        Ok(())
+    }
+
+    #[instrument(skip(self))]
+    pub fn play_track_at_timestamp(
+        &mut self,
+        track_id: TrackId,
+        timestamp: u64,
+    ) -> Result<Task<app::Message>, AppError> {
+        let track = self
+            .tracks
+            .get(&track_id)
+            .ok_or_else(|| AppError::TrackNotFound {
+                id: Some(track_id),
+                path: None,
+            })?
+            .clone();
+
+        let task = self.broadcast(Event::AttemptedPlayingTrackAtDuration(timestamp));
+
+        // Both play and seek increase the generation counter, the play command will emit some
+        // Playback Duration Progress events at the start.
+        self.playback_generation_threshold =
+            self.playback_controller.get_audio_engine_generation() + 1;
+
+        // TODO: Add proper play at timestamp command in audio pipeline
+        self.playback_controller.play(track)?;
+
+        self.current_playing_track_id = Some(track_id);
+
+        self.playback_controller.seek(timestamp)?;
+
+        Ok(task)
     }
 }

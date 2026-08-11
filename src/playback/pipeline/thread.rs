@@ -16,7 +16,7 @@ use crate::{
             command::CommandReceiver, event::EventSender, stage::decoder::AudioDecoderError,
         },
     },
-    track::models::Track,
+    track::models::{Track, TrackId},
 };
 
 pub enum AudioPipelineThreadCommand {
@@ -79,7 +79,7 @@ pub enum AudioPipelineThreadEvent {
     TrackFinished,
     StartedAudioPipeline,
     StoppedAudioPipeline,
-    ActiveTrackChanged { track_id: i64 },
+    ActiveTrackChanged(TrackId),
     UnexpectedError(AudioPipelineError),
 }
 

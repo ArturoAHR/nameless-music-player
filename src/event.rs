@@ -2,13 +2,14 @@ use iced::Task;
 
 use crate::{
     app::{App, Message},
-    track::models::Track,
+    track::models::TrackId,
 };
 
 #[derive(Debug, Clone)]
 pub enum Event {
     AttemptedPlayingTrack,
-    ActiveTrackChanged(Box<Option<Track>>),
+    AttemptedPlayingTrackAtDuration(u64),
+    ActiveTrackChanged(Option<TrackId>),
     PlaybackProgressed(f64),
     StartedPlayback,
     StoppedPlayback,

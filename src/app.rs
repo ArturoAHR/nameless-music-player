@@ -73,6 +73,7 @@ pub struct App {
     pub playback_controller: PlaybackController,
     pub playback_generation_threshold: u64,
     pub playback_queue: PlaybackQueue,
+    pub current_playback_owner: PlaybackOwner,
 
     pub navigation_bar: NavigationBar,
     pub explorer_pane: ExplorerPane,
@@ -92,6 +93,12 @@ pub enum AppStatus {
     AddingTracks,
     // TODO: Add optional error data
     FinishedAddingTracks,
+}
+
+#[derive(Debug)]
+pub enum PlaybackOwner {
+    PlaybackBar,
+    TagTrackModal,
 }
 
 #[derive(Debug, Clone)]
@@ -154,6 +161,7 @@ impl App {
                 playback_controller,
                 playback_generation_threshold: 0,
                 playback_queue: PlaybackQueue::default(),
+                current_playback_owner: PlaybackOwner::PlaybackBar,
 
                 navigation_bar: NavigationBar {},
                 explorer_pane: ExplorerPane {},

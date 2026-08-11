@@ -4,9 +4,10 @@ use iced::{
 };
 use iced_palace::widget::ellipsized_text;
 use rustc_hash::FxHashMap;
-use tracing::instrument;
+use tracing::{instrument, trace};
 
 use crate::{
+    app::PlaybackOwner,
     event::Event,
     outcome::PlaybackOutcome,
     playback::{
@@ -30,9 +31,10 @@ pub mod widgets;
 
 #[derive(Debug)]
 pub struct PlaybackBar {
-    current_position: f64,
+    pub current_position: f64,
+    pub current_playing_track_id: Option<TrackId>,
 
-    status: PlaybackBarStatus,
+    pub status: PlaybackBarStatus,
 
     // TODO: These values must live in the app state, declaring them here for mocking UI.
     volume_percentage: u8,
@@ -64,17 +66,6 @@ pub enum Outcome {
     Playback(PlaybackOutcome),
 }
 
-#[derive(Debug)]
-pub struct PlaybackBarUpdateContext<'a> {
-    pub playback_controller_status: &'a PlaybackControllerStatus,
-    pub playback_engine_generation: u64,
-}
-
-#[derive(Debug)]
-pub struct PlaybackBarEventContext {
-    pub playback_engine_generation: u64,
-}
-
 /*
  * TODO:
  * - Fix icons with consistent design.
@@ -84,6 +75,7 @@ impl PlaybackBar {
         Self {
             status: PlaybackBarStatus::Playing,
             current_position: 0.0,
+            current_playing_track_id: None,
 
             muted: false,
             volume_percentage: 100,
@@ -94,7 +86,7 @@ impl PlaybackBar {
     pub fn update(
         &mut self,
         message: Message,
-        ctx: PlaybackBarUpdateContext,
+        playback_controller_status: &PlaybackControllerStatus,
     ) -> (Task<Message>, Vec<Outcome>) {
         let task = Task::none();
         let mut outcomes = Vec::new();
@@ -104,7 +96,7 @@ impl PlaybackBar {
                 self.current_position = position;
 
                 if matches!(
-                    ctx.playback_controller_status,
+                    playback_controller_status,
                     PlaybackControllerStatus::Playing
                 ) {
                     outcomes.push(Outcome::Playback(PlaybackOutcome::Pause));
@@ -159,8 +151,18 @@ impl PlaybackBar {
 
     #[allow(clippy::single_match)]
     #[instrument(skip(self), level = "debug")]
-    pub fn on_event(&mut self, event: &Event, ctx: PlaybackBarEventContext) -> Task<Message> {
+    pub fn on_event(
+        &mut self,
+        event: &Event,
+        current_playback_owner: &PlaybackOwner,
+    ) -> Task<Message> {
         let task = Task::none();
+
+        if !matches!(current_playback_owner, PlaybackOwner::PlaybackBar) {
+            trace!("Playback Bar does not own the playback currently, ignoring event");
+
+            return task;
+        }
 
         match event {
             Event::AttemptedPlayingTrack => {
@@ -170,6 +172,9 @@ impl PlaybackBar {
             }
             Event::PlaybackProgressed(position) => {
                 self.current_position = *position;
+            }
+            Event::ActiveTrackChanged(track_id) => {
+                self.current_playing_track_id = *track_id;
             }
             _ => {}
         }
@@ -181,15 +186,15 @@ impl PlaybackBar {
         &'a self,
         theme: &Theme,
         tracks: &FxHashMap<TrackId, Track>,
-        current_playing_track_id: Option<&TrackId>,
         playback_queue: &PlaybackQueue,
     ) -> Element<'a, Message, Theme, Renderer> {
         let mut total_frames = 1.0;
         let mut current_position = 0.0;
 
         let mut track_name_label = String::new();
-        let (track_duration_timestamp, current_position_timestamp) = current_playing_track_id
-            .and_then(|track_id| tracks.get(track_id))
+        let (track_duration_timestamp, current_position_timestamp) = self
+            .current_playing_track_id
+            .and_then(|track_id| tracks.get(&track_id))
             .map_or_else(
                 || ("0:00".to_owned(), "0:00".to_owned()),
                 |track| {

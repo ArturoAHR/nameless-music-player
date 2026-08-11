@@ -66,9 +66,6 @@ pub async fn load_tag_library(pool: SqlitePool) -> Result<TagLibrary, AppError> 
         get_tag_groups(pool.clone()),
         get_track_tags(pool)
     )?;
-    dbg!(&tags);
-    dbg!(&tag_groups);
-    dbg!(&track_tags);
 
     Ok(TagLibrary {
         tags,

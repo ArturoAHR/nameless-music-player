@@ -1,10 +1,12 @@
 use iced::{Element, Renderer, Task, keyboard};
 use rustc_hash::FxHashMap;
+use tracing::instrument;
 
 use crate::{
-    app::{self},
+    app::{self, PlaybackOwner},
     event::Event,
     outcome::{ModalOutcome, PlaybackOutcome, TagOutcome},
+    playback::controller::PlaybackControllerStatus,
     tag::{
         index::TrackTagIndex,
         models::{Tag, TagGroup},
@@ -44,11 +46,17 @@ pub enum Outcome {
 }
 
 impl ModalController {
+    #[instrument(
+        skip(self, tags, tag_groups)
+        fields(tags_len = tags.len(), tag_groups_len = tag_groups.len()),
+        level = "debug"
+    )]
     pub fn update(
         &mut self,
         message: Message,
         tags: &[Tag],
         tag_groups: &[TagGroup],
+        playback_controller_status: &PlaybackControllerStatus,
     ) -> (Task<Message>, Vec<Outcome>) {
         let mut task = Task::none();
         let mut outcomes = Vec::new();
@@ -70,6 +78,7 @@ impl ModalController {
                     tag_tracks::Message::Keyboard(event),
                     tags,
                     tag_groups,
+                    playback_controller_status,
                 );
             }
             Message::Keyboard(_) => {}
@@ -77,14 +86,24 @@ impl ModalController {
             //     self.handle_manage_tags_modal(message);
             // }
             Message::TagTracksModal(message) => {
-                (task, outcomes) = self.handle_tag_tracks_modal(message, tags, tag_groups);
+                (task, outcomes) = self.handle_tag_tracks_modal(
+                    message,
+                    tags,
+                    tag_groups,
+                    playback_controller_status,
+                );
             }
         }
 
         (task, outcomes)
     }
 
-    pub fn on_event(&mut self, event: &Event) -> Task<Message> {
+    #[instrument(skip(self), level = "debug")]
+    pub fn on_event(
+        &mut self,
+        event: &Event,
+        current_playback_owner: &PlaybackOwner,
+    ) -> Task<Message> {
         let mut task = Task::none();
 
         let Some(current_modal) = self.current_modal.as_mut() else {
@@ -97,7 +116,7 @@ impl ModalController {
             }
             AppModal::TagTracks(tag_tracks_modal) => {
                 task = tag_tracks_modal
-                    .on_event(event)
+                    .on_event(event, current_playback_owner)
                     .map(Message::TagTracksModal);
             }
         }
@@ -105,6 +124,7 @@ impl ModalController {
         task
     }
 
+    #[instrument(skip_all, level = "debug")]
     pub fn view<'a>(
         &self,
         theme: &Theme,

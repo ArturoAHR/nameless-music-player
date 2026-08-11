@@ -3,10 +3,13 @@ use iced::{
     widget::{column, container, text},
 };
 use rustc_hash::FxHashMap;
+use tracing::{debug, instrument};
 
 use crate::{
+    app::PlaybackOwner,
     event::Event,
     outcome::{ModalOutcome, PlaybackOutcome, TagOutcome},
+    playback::controller::PlaybackControllerStatus,
     tag::{
         index::TrackTagIndex,
         models::{Tag, TagGroup, TagId},
@@ -32,20 +35,20 @@ pub struct TagTracksModal {
     tag_groups_cursor: usize,
 
     current_playback_position: f64,
+    playback_status: PlaybackStatus,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    // PlayTrack
-    // Resume
-    // Pause
-    //
-    Close,
-
     SelectTabGroup(usize),
     ToggleTag(TagId),
 
     Keyboard(keyboard::Event),
+
+    Play(TrackId),
+    Resume,
+    Pause,
+    Close,
     PlaybackScrubbed(f64),
     PlaybackSeeked,
 }
@@ -56,6 +59,12 @@ pub enum Outcome {
     Tag(TagOutcome),
 }
 
+#[derive(Debug)]
+pub enum PlaybackStatus {
+    Playing,
+    Paused,
+}
+
 impl TagTracksModal {
     pub fn new(track_tagging_queue: Vec<TrackId>) -> Self {
         Self {
@@ -64,14 +73,21 @@ impl TagTracksModal {
             tag_groups_cursor: 0,
 
             current_playback_position: 0.0,
+            playback_status: PlaybackStatus::Playing,
         }
     }
 
+    #[instrument(
+        skip(self, tags, tag_groups)
+        fields(tags_len = tags.len(), tag_groups_len = tag_groups.len()),
+        level = "debug"
+    )]
     pub fn update(
         &mut self,
         message: Message,
         tags: &[Tag],
         tag_groups: &[TagGroup],
+        playback_controller_status: &PlaybackControllerStatus,
     ) -> (Task<Message>, Vec<Outcome>) {
         let task = Task::none();
         let mut outcomes = Vec::new();
@@ -88,10 +104,7 @@ impl TagTracksModal {
             {
                 outcomes.push(Outcome::Tag(TagOutcome::ToggleTag(*track_id, tag_id)));
             }
-            Message::PlaybackScrubbed(position) => {
-                self.current_playback_position = position;
-            }
-            Message::PlaybackSeeked => {}
+
             Message::Keyboard(keyboard::Event::KeyPressed {
                 key: keyboard::Key::Character(character),
                 repeat: false,
@@ -107,15 +120,78 @@ impl TagTracksModal {
                 outcomes.push(Outcome::Tag(TagOutcome::ToggleTag(*track_id, tag.id)));
             }
             Message::ToggleTag(_) | Message::Keyboard(_) => {}
+
+            Message::Resume => {
+                self.playback_status = PlaybackStatus::Playing;
+
+                outcomes.push(Outcome::Playback(PlaybackOutcome::Resume));
+            }
+            Message::Pause => {
+                self.playback_status = PlaybackStatus::Paused;
+
+                outcomes.push(Outcome::Playback(PlaybackOutcome::Pause));
+            }
+            Message::Play(track_id) => {
+                self.playback_status = PlaybackStatus::Playing;
+
+                outcomes.push(Outcome::Playback(PlaybackOutcome::Play(track_id)));
+            }
+            Message::PlaybackScrubbed(position) => {
+                self.current_playback_position = position;
+
+                if matches!(
+                    playback_controller_status,
+                    PlaybackControllerStatus::Playing,
+                ) {
+                    outcomes.push(Outcome::Playback(PlaybackOutcome::Pause));
+                }
+            }
+            Message::PlaybackSeeked => {
+                let pre_seek_status = match self.playback_status {
+                    PlaybackStatus::Playing => PlaybackControllerStatus::Playing,
+                    PlaybackStatus::Paused => PlaybackControllerStatus::Stopped,
+                };
+
+                outcomes.push(Outcome::Playback(PlaybackOutcome::Seek {
+                    timestamp: self.current_playback_position as u64,
+                    post_seek_status: pre_seek_status,
+                }));
+            }
         }
 
         (task, outcomes)
     }
 
-    pub fn on_event(&mut self, _event: &Event) -> Task<Message> {
-        Task::none()
+    #[instrument(skip(self), level = "debug")]
+    pub fn on_event(
+        &mut self,
+        event: &Event,
+        current_playback_owner: &PlaybackOwner,
+    ) -> Task<Message> {
+        let task = Task::none();
+
+        if !matches!(current_playback_owner, PlaybackOwner::TagTrackModal) {
+            debug!("Playback Bar does not own the playback currently, ignoring event");
+
+            return task;
+        }
+
+        match event {
+            Event::AttemptedPlayingTrack => {
+                self.playback_status = PlaybackStatus::Playing;
+
+                self.current_playback_position = 0.0;
+            }
+            Event::PlaybackProgressed(position) => {
+                self.current_playback_position = *position;
+            }
+            _ => {}
+        }
+
+        task
     }
 
+    #[instrument(skip_all, level = "debug")]
     pub fn view<'a>(
         &self,
         theme: &Theme,

@@ -1,13 +1,14 @@
 use iced::Task;
-use tracing::{instrument, warn};
+use tracing::{error, instrument, warn};
 
 use crate::{
-    app::{App, Message},
+    app::{App, Message, PlaybackOwner},
     error::AppError,
     outcome::TagOutcome::SaveTags,
     playback::{controller::PlaybackControllerStatus, queue::entry::PlaybackQueueEntryId},
     tag::models::TagId,
     track::models::TrackId,
+    ui::components::playback_bar::PlaybackBarStatus,
 };
 
 #[derive(Debug, Clone)]
@@ -83,15 +84,7 @@ impl App {
                 post_seek_status,
                 timestamp,
             } => {
-                self.playback_generation_threshold =
-                    self.playback_controller.get_audio_engine_generation();
-
-                self.playback_controller.seek(timestamp)?;
-
-                match post_seek_status {
-                    PlaybackControllerStatus::Playing => self.playback_controller.resume()?,
-                    PlaybackControllerStatus::Stopped => self.playback_controller.pause()?,
-                }
+                self.seek_timestamp(timestamp, post_seek_status)?;
             }
 
             PlaybackOutcome::Play(track_id) => task = self.play_track(track_id)?,
@@ -161,9 +154,38 @@ impl App {
 
         match outcome {
             ModalOutcome::CloseModal => {
-                task = self.modal_controller.close_modal();
+                if !matches!(self.current_playback_owner, PlaybackOwner::PlaybackBar) {
+                    if let Some(current_playing_track_id) =
+                        self.playback_bar.current_playing_track_id
+                    {
+                        task = self.play_track_at_timestamp(
+                            current_playing_track_id,
+                            self.playback_bar.current_position as u64,
+                        )?;
+
+                        if matches!(self.playback_bar.status, PlaybackBarStatus::Paused) {
+                            self.playback_controller.pause()?;
+                        }
+                    }
+
+                    self.current_playback_owner = PlaybackOwner::PlaybackBar;
+                }
+
+                task = task.chain(self.modal_controller.close_modal());
             }
             ModalOutcome::OpenTagTracksModal(track_tagging_queue) => {
+                let Some(first_track_id) = track_tagging_queue.first() else {
+                    error!(
+                        "Provided track tagging queue was empty, tagging modal won't be opened."
+                    );
+
+                    return Ok(task);
+                };
+
+                self.current_playback_owner = PlaybackOwner::TagTrackModal;
+
+                task = self.play_track(*first_track_id)?;
+
                 self.modal_controller
                     .open_tag_tracks_modal(track_tagging_queue);
             }
