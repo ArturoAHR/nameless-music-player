@@ -83,6 +83,9 @@ impl App {
                 post_seek_status,
                 timestamp,
             } => {
+                self.playback_generation_threshold =
+                    self.playback_controller.get_audio_engine_generation();
+
                 self.playback_controller.seek(timestamp)?;
 
                 match post_seek_status {

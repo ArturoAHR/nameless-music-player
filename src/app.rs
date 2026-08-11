@@ -71,6 +71,7 @@ pub struct App {
     pub pane_split_ratio: PaneSplitPositions,
 
     pub playback_controller: PlaybackController,
+    pub playback_generation_threshold: u64,
     pub playback_queue: PlaybackQueue,
 
     pub navigation_bar: NavigationBar,
@@ -151,6 +152,7 @@ impl App {
                 },
 
                 playback_controller,
+                playback_generation_threshold: 0,
                 playback_queue: PlaybackQueue::default(),
 
                 navigation_bar: NavigationBar {},
@@ -245,7 +247,7 @@ impl App {
                 self.tag_groups = tag_groups;
                 self.track_tag_index = TrackTagIndex::new(track_tags);
 
-                info!("Tag library loaded successfully");
+                // info!("Tag library loaded successfully");
             }
             Message::LoadedTagLibrary(Err(error)) => {
                 error!("Failed to load tag library: {error}");

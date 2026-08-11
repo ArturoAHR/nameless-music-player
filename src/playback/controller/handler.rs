@@ -31,7 +31,7 @@ impl App {
         }
 
         let audio_engine_generation = self.playback_controller.get_audio_engine_generation();
-        if audio_engine_generation <= self.playback_bar.current_position_generation_threshold {
+        if audio_engine_generation <= self.playback_generation_threshold {
             return None;
         }
 
@@ -74,6 +74,7 @@ impl App {
                     task = self.broadcast(Event::PlaybackProgressed(current_position));
                 }
             }
+
             Message::PendingOutputDeviceChange => {
                 task = if let Err(error) = self.playback_controller.build_output() {
                     Task::done(app::Message::PlaybackController(
@@ -110,6 +111,8 @@ impl App {
         let event_tasks = self.broadcast(Event::AttemptedPlayingTrack);
 
         self.playback_controller.play(track)?;
+
+        self.playback_generation_threshold = self.playback_controller.get_audio_engine_generation();
 
         self.current_playing_track_id = Some(track_id);
 

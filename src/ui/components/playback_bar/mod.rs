@@ -31,7 +31,6 @@ pub mod widgets;
 #[derive(Debug)]
 pub struct PlaybackBar {
     current_position: f64,
-    pub current_position_generation_threshold: u64,
 
     status: PlaybackBarStatus,
 
@@ -85,7 +84,6 @@ impl PlaybackBar {
         Self {
             status: PlaybackBarStatus::Playing,
             current_position: 0.0,
-            current_position_generation_threshold: 0,
 
             muted: false,
             volume_percentage: 100,
@@ -104,8 +102,6 @@ impl PlaybackBar {
         match message {
             Message::Scrubbed(position) => {
                 self.current_position = position;
-
-                self.current_position_generation_threshold = ctx.playback_engine_generation;
 
                 if matches!(
                     ctx.playback_controller_status,
@@ -170,7 +166,6 @@ impl PlaybackBar {
             Event::AttemptedPlayingTrack => {
                 self.status = PlaybackBarStatus::Playing;
 
-                self.current_position_generation_threshold = ctx.playback_engine_generation;
                 self.current_position = 0.0;
             }
             Event::PlaybackProgressed(position) => {
