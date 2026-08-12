@@ -187,6 +187,7 @@ impl TagTracksModal {
         let mut outcomes = Vec::new();
 
         match event {
+            // alphanumeric character: tag the current track with the corresponding tag
             keyboard::Event::KeyPressed {
                 key: keyboard::Key::Character(character),
                 repeat: false,
@@ -220,6 +221,7 @@ impl TagTracksModal {
 
                 outcomes.push(Outcome::Tag(TagOutcome::ToggleTag(*track_id, tag_id)));
             }
+            // -> : Scrub playback to the right
             keyboard::Event::KeyPressed {
                 key: keyboard::Key::Named(keyboard::key::Named::ArrowRight),
                 ..
@@ -232,6 +234,7 @@ impl TagTracksModal {
                     outcomes.push(outcome);
                 }
             }
+            // <- : Scrub playback to the left
             keyboard::Event::KeyPressed {
                 key: keyboard::Key::Named(keyboard::key::Named::ArrowLeft),
                 ..
@@ -244,6 +247,7 @@ impl TagTracksModal {
                     outcomes.push(outcome);
                 }
             }
+            // Release -> : Commit seek
             keyboard::Event::KeyReleased {
                 key: keyboard::Key::Named(keyboard::key::Named::ArrowRight),
                 ..
@@ -254,6 +258,7 @@ impl TagTracksModal {
                     outcomes.push(self.handle_keyboard_seek());
                 }
             }
+            // Release <- : Commit seek
             keyboard::Event::KeyReleased {
                 key: keyboard::Key::Named(keyboard::key::Named::ArrowLeft),
                 ..
@@ -264,6 +269,7 @@ impl TagTracksModal {
                     outcomes.push(self.handle_keyboard_seek());
                 }
             }
+            // Space: Pause/Unpause
             keyboard::Event::KeyPressed {
                 key: keyboard::Key::Named(keyboard::key::Named::Space),
                 repeat: false,
@@ -281,6 +287,25 @@ impl TagTracksModal {
                         outcomes.push(Outcome::Playback(PlaybackOutcome::Pause));
                     }
                 }
+            }
+            // Tab: Select next tab group
+            keyboard::Event::KeyPressed {
+                key: keyboard::Key::Named(keyboard::key::Named::Tab),
+                repeat: false,
+                modifiers: keyboard::Modifiers::NONE,
+                ..
+            } => {
+                self.tag_groups_cursor = (self.tag_groups_cursor + 1) % tag_groups.len();
+            }
+            // Shift + Tab: Select previous tab group
+            keyboard::Event::KeyPressed {
+                key: keyboard::Key::Named(keyboard::key::Named::Tab),
+                repeat: false,
+                modifiers: keyboard::Modifiers::SHIFT,
+                ..
+            } => {
+                self.tag_groups_cursor =
+                    (tag_groups.len() + self.tag_groups_cursor - 1) % tag_groups.len();
             }
             _ => {}
         }
