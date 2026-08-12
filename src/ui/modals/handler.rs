@@ -26,6 +26,7 @@ impl App {
     pub fn handle_modal(&mut self, message: Message) -> Task<app::Message> {
         let (task, outcomes) = self.modal_controller.update(
             message,
+            &self.tracks,
             &self.tags,
             &self.tag_groups,
             &self.playback_controller.status,

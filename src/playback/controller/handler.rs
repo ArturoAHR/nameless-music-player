@@ -141,15 +141,17 @@ impl App {
     pub fn seek_timestamp(
         &mut self,
         timestamp: u64,
-        post_seek_status: PlaybackControllerStatus,
+        post_seek_status: Option<PlaybackControllerStatus>,
     ) -> Result<(), AppError> {
         self.playback_generation_threshold = self.playback_controller.get_audio_engine_generation();
 
         self.playback_controller.seek(timestamp)?;
 
         match post_seek_status {
-            PlaybackControllerStatus::Playing => self.playback_controller.resume()?,
-            PlaybackControllerStatus::Stopped => self.playback_controller.pause()?,
+            Some(PlaybackControllerStatus::Playing) => self.playback_controller.resume()?,
+            Some(PlaybackControllerStatus::Stopped) => self.playback_controller.pause()?,
+
+            None => {}
         }
 
         Ok(())

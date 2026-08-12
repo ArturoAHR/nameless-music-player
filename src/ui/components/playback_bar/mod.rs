@@ -111,15 +111,15 @@ impl PlaybackBar {
 
                 outcomes.push(Outcome::Playback(PlaybackOutcome::Seek {
                     timestamp: self.current_position.round() as u64,
-                    post_seek_status: pre_seek_status,
+                    post_seek_status: Some(pre_seek_status),
                 }));
             }
-            Message::Resume => {
+            Message::Resume if self.current_playing_track_id.is_some() => {
                 self.status = PlaybackBarStatus::Playing;
 
                 outcomes.push(Outcome::Playback(PlaybackOutcome::Resume));
             }
-            Message::Pause => {
+            Message::Pause if self.current_playing_track_id.is_some() => {
                 self.status = PlaybackBarStatus::Paused;
 
                 outcomes.push(Outcome::Playback(PlaybackOutcome::Pause));
@@ -144,6 +144,8 @@ impl PlaybackBar {
             Message::CycleQueueOrder => {
                 outcomes.push(Outcome::Playback(PlaybackOutcome::CycleOrder));
             }
+
+            Message::Resume | Message::Pause => {}
         }
 
         (task, outcomes)

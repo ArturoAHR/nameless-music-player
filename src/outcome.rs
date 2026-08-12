@@ -33,7 +33,7 @@ pub enum PlaybackOutcome {
     StartQueue(TrackId),
     Seek {
         timestamp: u64,
-        post_seek_status: PlaybackControllerStatus,
+        post_seek_status: Option<PlaybackControllerStatus>,
     },
     PlayNext,
     PlayPrevious,
@@ -166,6 +166,11 @@ impl App {
                         if matches!(self.playback_bar.status, PlaybackBarStatus::Paused) {
                             self.playback_controller.pause()?;
                         }
+                    } else if matches!(
+                        self.playback_controller.status,
+                        PlaybackControllerStatus::Playing,
+                    ) {
+                        self.playback_controller.pause()?;
                     }
 
                     self.current_playback_owner = PlaybackOwner::PlaybackBar;

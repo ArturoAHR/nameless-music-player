@@ -1,9 +1,10 @@
 use iced::Task;
+use rustc_hash::FxHashMap;
 
 use crate::{
     playback::controller::PlaybackControllerStatus,
     tag::models::{Tag, TagGroup},
-    track::models::TrackId,
+    track::models::{Track, TrackId},
     ui::modals::{
         self, AppModal, ModalController,
         tag_tracks::{Message, Outcome, TagTracksModal},
@@ -14,6 +15,7 @@ impl ModalController {
     pub fn handle_tag_tracks_modal(
         &mut self,
         message: Message,
+        tracks: &FxHashMap<TrackId, Track>,
         tags: &[Tag],
         tag_groups: &[TagGroup],
         playback_controller_status: &PlaybackControllerStatus,
@@ -22,8 +24,13 @@ impl ModalController {
             return (Task::none(), Vec::new());
         };
 
-        let (task, outcomes) =
-            tag_tracks_modal.update(message, tags, tag_groups, playback_controller_status);
+        let (task, outcomes) = tag_tracks_modal.update(
+            message,
+            tracks,
+            tags,
+            tag_groups,
+            playback_controller_status,
+        );
 
         let modal_task = task.map(modals::Message::TagTracksModal);
 

@@ -47,13 +47,14 @@ pub enum Outcome {
 
 impl ModalController {
     #[instrument(
-        skip(self, tags, tag_groups)
-        fields(tags_len = tags.len(), tag_groups_len = tag_groups.len()),
+        skip(self, tracks, tags, tag_groups)
+        fields(tracks_len = tracks.len(), tags_len = tags.len(), tag_groups_len = tag_groups.len()),
         level = "debug"
     )]
     pub fn update(
         &mut self,
         message: Message,
+        tracks: &FxHashMap<TrackId, Track>,
         tags: &[Tag],
         tag_groups: &[TagGroup],
         playback_controller_status: &PlaybackControllerStatus,
@@ -76,6 +77,7 @@ impl ModalController {
             {
                 (task, outcomes) = self.handle_tag_tracks_modal(
                     tag_tracks::Message::Keyboard(event),
+                    tracks,
                     tags,
                     tag_groups,
                     playback_controller_status,
@@ -88,6 +90,7 @@ impl ModalController {
             Message::TagTracksModal(message) => {
                 (task, outcomes) = self.handle_tag_tracks_modal(
                     message,
+                    tracks,
                     tags,
                     tag_groups,
                     playback_controller_status,

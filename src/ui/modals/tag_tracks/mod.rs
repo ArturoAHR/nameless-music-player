@@ -78,18 +78,19 @@ impl TagTracksModal {
     }
 
     #[instrument(
-        skip(self, tags, tag_groups)
-        fields(tags_len = tags.len(), tag_groups_len = tag_groups.len()),
+        skip(self, tracks, tags, tag_groups)
+        fields(tracks_len = tracks.len(), tags_len = tags.len(), tag_groups_len = tag_groups.len()),
         level = "debug"
     )]
     pub fn update(
         &mut self,
         message: Message,
+        tracks: &FxHashMap<TrackId, Track>,
         tags: &[Tag],
         tag_groups: &[TagGroup],
         playback_controller_status: &PlaybackControllerStatus,
     ) -> (Task<Message>, Vec<Outcome>) {
-        let task = Task::none();
+        let mut task = Task::none();
         let mut outcomes = Vec::new();
 
         match message {
@@ -105,21 +106,11 @@ impl TagTracksModal {
                 outcomes.push(Outcome::Tag(TagOutcome::ToggleTag(*track_id, tag_id)));
             }
 
-            Message::Keyboard(keyboard::Event::KeyPressed {
-                key: keyboard::Key::Character(character),
-                repeat: false,
-                ..
-            }) if let Some(character) = character.chars().next()
-                && let Some(track_id) = self
-                    .track_tagging_queue
-                    .get(self.track_tagging_queue_cursor)
-                && let Some(tag_group) = tag_groups.get(self.tag_groups_cursor)
-                && let Some(tag_index) = get_tag_index(&character)
-                && let Some(tag) = get_tag_group_tags(tags, tag_group.id).get(tag_index) =>
-            {
-                outcomes.push(Outcome::Tag(TagOutcome::ToggleTag(*track_id, tag.id)));
+            Message::Keyboard(event) => {
+                (task, outcomes) = self.handle_keyboard(event, tracks, tags, tag_groups);
             }
-            Message::ToggleTag(_) | Message::Keyboard(_) => {}
+
+            Message::ToggleTag(_) => {}
 
             Message::Resume => {
                 self.playback_status = PlaybackStatus::Playing;
@@ -154,9 +145,57 @@ impl TagTracksModal {
 
                 outcomes.push(Outcome::Playback(PlaybackOutcome::Seek {
                     timestamp: self.current_playback_position as u64,
-                    post_seek_status: pre_seek_status,
+                    post_seek_status: Some(pre_seek_status),
                 }));
             }
+        }
+
+        (task, outcomes)
+    }
+
+    #[instrument(skip_all)]
+    fn handle_keyboard(
+        &mut self,
+        event: keyboard::Event,
+        tracks: &FxHashMap<TrackId, Track>,
+        tags: &[Tag],
+        tag_groups: &[TagGroup],
+    ) -> (Task<Message>, Vec<Outcome>) {
+        let task = Task::none();
+        let mut outcomes = Vec::new();
+
+        match event {
+            keyboard::Event::KeyPressed {
+                key: keyboard::Key::Character(character),
+                repeat: false,
+                ..
+            } if let Some(character) = character.chars().next()
+                && let Some(track_id) = self
+                    .track_tagging_queue
+                    .get(self.track_tagging_queue_cursor)
+                && let Some(tag_group) = tag_groups.get(self.tag_groups_cursor)
+                && let Some(tag_index) = get_tag_index(&character)
+                && let Some(tag) = get_tag_group_tags(tags, tag_group.id).get(tag_index) =>
+            {
+                outcomes.push(Outcome::Tag(TagOutcome::ToggleTag(*track_id, tag.id)));
+            }
+            keyboard::Event::KeyPressed {
+                key: keyboard::Key::Named(keyboard::key::Named::ArrowRight),
+                ..
+            } if let Some(track) = self
+                .track_tagging_queue
+                .get(self.track_tagging_queue_cursor)
+                .and_then(|track_id| tracks.get(track_id)) =>
+            {
+                let frames_delta = track.sample_rate * 5; // 5 seconds of frames
+
+                outcomes.push(Outcome::Playback(PlaybackOutcome::Seek {
+                    timestamp: (self.current_playback_position as u64 + frames_delta as u64)
+                        .min(track.frames as u64),
+                    post_seek_status: None,
+                }));
+            }
+            _ => {}
         }
 
         (task, outcomes)
