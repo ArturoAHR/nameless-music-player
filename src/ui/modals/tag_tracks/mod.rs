@@ -107,7 +107,13 @@ impl TagTracksModal {
             }
 
             Message::Keyboard(event) => {
-                (task, outcomes) = self.handle_keyboard(event, tracks, tags, tag_groups);
+                (task, outcomes) = self.handle_keyboard(
+                    event,
+                    tracks,
+                    tags,
+                    tag_groups,
+                    playback_controller_status,
+                );
             }
 
             Message::ToggleTag(_) => {}
@@ -160,6 +166,7 @@ impl TagTracksModal {
         tracks: &FxHashMap<TrackId, Track>,
         tags: &[Tag],
         tag_groups: &[TagGroup],
+        playback_controller_status: &PlaybackControllerStatus,
     ) -> (Task<Message>, Vec<Outcome>) {
         let task = Task::none();
         let mut outcomes = Vec::new();
@@ -179,20 +186,59 @@ impl TagTracksModal {
             {
                 outcomes.push(Outcome::Tag(TagOutcome::ToggleTag(*track_id, tag.id)));
             }
-            keyboard::Event::KeyPressed {
-                key: keyboard::Key::Named(keyboard::key::Named::ArrowRight),
+            keyboard::Event::KeyPressed { key, .. }
+                if matches!(
+                    key,
+                    keyboard::Key::Named(
+                        keyboard::key::Named::ArrowLeft | keyboard::key::Named::ArrowRight
+                    )
+                ) && let Some(track) = self
+                    .track_tagging_queue
+                    .get(self.track_tagging_queue_cursor)
+                    .and_then(|track_id| tracks.get(track_id)) =>
+            {
+                let frames_delta = track.sample_rate * 5; // 5 seconds of frames
+
+                match key {
+                    keyboard::Key::Named(keyboard::key::Named::ArrowLeft) => {
+                        self.current_playback_position =
+                            (self.current_playback_position - frames_delta as f64).max(0.0);
+                    }
+                    keyboard::Key::Named(keyboard::key::Named::ArrowRight) => {
+                        self.current_playback_position = (self.current_playback_position
+                            + frames_delta as f64)
+                            .min(track.frames as f64);
+                    }
+                    _ => {}
+                }
+
+                if matches!(
+                    playback_controller_status,
+                    PlaybackControllerStatus::Playing,
+                ) {
+                    outcomes.push(Outcome::Playback(PlaybackOutcome::Pause));
+                }
+            }
+            keyboard::Event::KeyReleased {
+                key:
+                    keyboard::Key::Named(
+                        keyboard::key::Named::ArrowRight | keyboard::key::Named::ArrowLeft,
+                    ),
                 ..
             } if let Some(track) = self
                 .track_tagging_queue
                 .get(self.track_tagging_queue_cursor)
                 .and_then(|track_id| tracks.get(track_id)) =>
             {
-                let frames_delta = track.sample_rate * 5; // 5 seconds of frames
+                let pre_seek_status = match self.playback_status {
+                    PlaybackStatus::Playing => PlaybackControllerStatus::Playing,
+                    PlaybackStatus::Paused => PlaybackControllerStatus::Stopped,
+                };
 
                 outcomes.push(Outcome::Playback(PlaybackOutcome::Seek {
-                    timestamp: (self.current_playback_position as u64 + frames_delta as u64)
-                        .min(track.frames as u64),
-                    post_seek_status: None,
+                    timestamp: (self.current_playback_position as u64)
+                        .clamp(0, track.frames as u64),
+                    post_seek_status: Some(pre_seek_status),
                 }));
             }
             _ => {}
