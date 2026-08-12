@@ -65,6 +65,12 @@ pub enum PlaybackStatus {
     Paused,
 }
 
+#[derive(Debug)]
+pub enum KeyboardScrubDirection {
+    Right,
+    Left,
+}
+
 impl TagTracksModal {
     pub fn new(track_tagging_queue: Vec<TrackId>) -> Self {
         Self {
@@ -176,47 +182,57 @@ impl TagTracksModal {
                 key: keyboard::Key::Character(character),
                 repeat: false,
                 ..
-            } if let Some(character) = character.chars().next()
-                && let Some(track_id) = self
+            } => {
+                let Some(track_id) = self
                     .track_tagging_queue
                     .get(self.track_tagging_queue_cursor)
-                && let Some(tag_group) = tag_groups.get(self.tag_groups_cursor)
-                && let Some(tag_index) = get_tag_index(&character)
-                && let Some(tag) = get_tag_group_tags(tags, tag_group.id).get(tag_index) =>
-            {
-                outcomes.push(Outcome::Tag(TagOutcome::ToggleTag(*track_id, tag.id)));
+                else {
+                    return (task, outcomes);
+                };
+
+                let Some(tag_index) = character
+                    .chars()
+                    .next()
+                    .and_then(|character| get_tag_index(&character))
+                else {
+                    return (task, outcomes);
+                };
+
+                let Some(tag_id) = tag_groups
+                    .get(self.tag_groups_cursor)
+                    .and_then(|tag_group| {
+                        get_tag_group_tags(tags, tag_group.id)
+                            .get(tag_index)
+                            .map(|tag| tag.id)
+                    })
+                else {
+                    return (task, outcomes);
+                };
+
+                outcomes.push(Outcome::Tag(TagOutcome::ToggleTag(*track_id, tag_id)));
             }
-            keyboard::Event::KeyPressed { key, .. }
-                if matches!(
-                    key,
-                    keyboard::Key::Named(
-                        keyboard::key::Named::ArrowLeft | keyboard::key::Named::ArrowRight
-                    )
-                ) && let Some(track) = self
-                    .track_tagging_queue
-                    .get(self.track_tagging_queue_cursor)
-                    .and_then(|track_id| tracks.get(track_id)) =>
-            {
-                let frames_delta = track.sample_rate * 5; // 5 seconds of frames
-
-                match key {
-                    keyboard::Key::Named(keyboard::key::Named::ArrowLeft) => {
-                        self.current_playback_position =
-                            (self.current_playback_position - frames_delta as f64).max(0.0);
-                    }
-                    keyboard::Key::Named(keyboard::key::Named::ArrowRight) => {
-                        self.current_playback_position = (self.current_playback_position
-                            + frames_delta as f64)
-                            .min(track.frames as f64);
-                    }
-                    _ => {}
-                }
-
-                if matches!(
+            keyboard::Event::KeyPressed {
+                key: keyboard::Key::Named(keyboard::key::Named::ArrowRight),
+                ..
+            } => {
+                if let Some(outcome) = self.handle_keyboard_scrub(
+                    KeyboardScrubDirection::Right,
+                    tracks,
                     playback_controller_status,
-                    PlaybackControllerStatus::Playing,
                 ) {
-                    outcomes.push(Outcome::Playback(PlaybackOutcome::Pause));
+                    outcomes.push(outcome);
+                }
+            }
+            keyboard::Event::KeyPressed {
+                key: keyboard::Key::Named(keyboard::key::Named::ArrowLeft),
+                ..
+            } => {
+                if let Some(outcome) = self.handle_keyboard_scrub(
+                    KeyboardScrubDirection::Left,
+                    tracks,
+                    playback_controller_status,
+                ) {
+                    outcomes.push(outcome);
                 }
             }
             keyboard::Event::KeyReleased {
@@ -225,19 +241,14 @@ impl TagTracksModal {
                         keyboard::key::Named::ArrowRight | keyboard::key::Named::ArrowLeft,
                     ),
                 ..
-            } if let Some(track) = self
-                .track_tagging_queue
-                .get(self.track_tagging_queue_cursor)
-                .and_then(|track_id| tracks.get(track_id)) =>
-            {
+            } => {
                 let pre_seek_status = match self.playback_status {
                     PlaybackStatus::Playing => PlaybackControllerStatus::Playing,
                     PlaybackStatus::Paused => PlaybackControllerStatus::Stopped,
                 };
 
                 outcomes.push(Outcome::Playback(PlaybackOutcome::Seek {
-                    timestamp: (self.current_playback_position as u64)
-                        .clamp(0, track.frames as u64),
+                    timestamp: self.current_playback_position as u64,
                     post_seek_status: Some(pre_seek_status),
                 }));
             }
@@ -245,6 +256,40 @@ impl TagTracksModal {
         }
 
         (task, outcomes)
+    }
+
+    pub fn handle_keyboard_scrub(
+        &mut self,
+        scrub_direction: KeyboardScrubDirection,
+        tracks: &FxHashMap<TrackId, Track>,
+        playback_controller_status: &PlaybackControllerStatus,
+    ) -> Option<Outcome> {
+        let track = self
+            .track_tagging_queue
+            .get(self.track_tagging_queue_cursor)
+            .and_then(|track_id| tracks.get(track_id))?;
+
+        let frames_delta = track.sample_rate * 5; // 5 seconds of frames
+
+        match scrub_direction {
+            KeyboardScrubDirection::Left => {
+                self.current_playback_position =
+                    (self.current_playback_position - frames_delta as f64).max(0.0);
+            }
+            KeyboardScrubDirection::Right => {
+                self.current_playback_position =
+                    (self.current_playback_position + frames_delta as f64).min(track.frames as f64);
+            }
+        }
+
+        if matches!(
+            playback_controller_status,
+            PlaybackControllerStatus::Playing,
+        ) {
+            return Some(Outcome::Playback(PlaybackOutcome::Pause));
+        }
+
+        None
     }
 
     #[instrument(skip(self), level = "debug")]
