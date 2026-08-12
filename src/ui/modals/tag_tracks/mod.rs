@@ -34,6 +34,8 @@ pub struct TagTracksModal {
     track_tagging_queue_cursor: usize,
     tag_groups_cursor: usize,
 
+    scrubbing_keyboard_action: ScrubbingKeyboardAction,
+
     current_playback_position: f64,
     playback_status: PlaybackStatus,
 }
@@ -65,6 +67,12 @@ pub enum PlaybackStatus {
     Paused,
 }
 
+#[derive(Debug, Default)]
+pub struct ScrubbingKeyboardAction {
+    pub left: bool,
+    pub right: bool,
+}
+
 #[derive(Debug)]
 pub enum KeyboardScrubDirection {
     Right,
@@ -77,6 +85,7 @@ impl TagTracksModal {
             track_tagging_queue,
             track_tagging_queue_cursor: 0,
             tag_groups_cursor: 0,
+            scrubbing_keyboard_action: ScrubbingKeyboardAction::default(),
 
             current_playback_position: 0.0,
             playback_status: PlaybackStatus::Playing,
@@ -236,21 +245,42 @@ impl TagTracksModal {
                 }
             }
             keyboard::Event::KeyReleased {
-                key:
-                    keyboard::Key::Named(
-                        keyboard::key::Named::ArrowRight | keyboard::key::Named::ArrowLeft,
-                    ),
+                key: keyboard::Key::Named(keyboard::key::Named::ArrowRight),
                 ..
             } => {
-                let pre_seek_status = match self.playback_status {
-                    PlaybackStatus::Playing => PlaybackControllerStatus::Playing,
-                    PlaybackStatus::Paused => PlaybackControllerStatus::Stopped,
-                };
+                self.scrubbing_keyboard_action.right = false;
 
-                outcomes.push(Outcome::Playback(PlaybackOutcome::Seek {
-                    timestamp: self.current_playback_position as u64,
-                    post_seek_status: Some(pre_seek_status),
-                }));
+                if !self.scrubbing_keyboard_action.left {
+                    outcomes.push(self.handle_keyboard_seek());
+                }
+            }
+            keyboard::Event::KeyReleased {
+                key: keyboard::Key::Named(keyboard::key::Named::ArrowLeft),
+                ..
+            } => {
+                self.scrubbing_keyboard_action.left = false;
+
+                if !self.scrubbing_keyboard_action.right {
+                    outcomes.push(self.handle_keyboard_seek());
+                }
+            }
+            keyboard::Event::KeyPressed {
+                key: keyboard::Key::Named(keyboard::key::Named::Space),
+                repeat: false,
+                ..
+            } if !self.scrubbing_keyboard_action.left && !self.scrubbing_keyboard_action.right => {
+                match self.playback_status {
+                    PlaybackStatus::Paused => {
+                        self.playback_status = PlaybackStatus::Playing;
+
+                        outcomes.push(Outcome::Playback(PlaybackOutcome::Resume));
+                    }
+                    PlaybackStatus::Playing => {
+                        self.playback_status = PlaybackStatus::Paused;
+
+                        outcomes.push(Outcome::Playback(PlaybackOutcome::Pause));
+                    }
+                }
             }
             _ => {}
         }
@@ -275,10 +305,14 @@ impl TagTracksModal {
             KeyboardScrubDirection::Left => {
                 self.current_playback_position =
                     (self.current_playback_position - frames_delta as f64).max(0.0);
+
+                self.scrubbing_keyboard_action.left = true;
             }
             KeyboardScrubDirection::Right => {
                 self.current_playback_position =
                     (self.current_playback_position + frames_delta as f64).min(track.frames as f64);
+
+                self.scrubbing_keyboard_action.right = true;
             }
         }
 
@@ -290,6 +324,18 @@ impl TagTracksModal {
         }
 
         None
+    }
+
+    pub fn handle_keyboard_seek(&mut self) -> Outcome {
+        let pre_seek_status = match self.playback_status {
+            PlaybackStatus::Playing => PlaybackControllerStatus::Playing,
+            PlaybackStatus::Paused => PlaybackControllerStatus::Stopped,
+        };
+
+        Outcome::Playback(PlaybackOutcome::Seek {
+            timestamp: self.current_playback_position as u64,
+            post_seek_status: Some(pre_seek_status),
+        })
     }
 
     #[instrument(skip(self), level = "debug")]
