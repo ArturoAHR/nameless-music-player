@@ -70,6 +70,17 @@ impl App {
                             }
                         }
                     }
+                    AudioPipelineThreadEvent::TrackFinished
+                        if matches!(self.current_playback_owner, PlaybackOwner::TagTrackModal)
+                            && let Some(track_id) = self.current_playing_track_id =>
+                    {
+                        match self.play_track(track_id) {
+                            Ok(event_tasks) => task = event_tasks,
+                            Err(error) => {
+                                error!("Could not play next track: {error}");
+                            }
+                        }
+                    }
                     AudioPipelineThreadEvent::ActiveTrackChanged(track_id) => {
                         task = self.broadcast(Event::ActiveTrackChanged(Some(track_id)));
                     }
