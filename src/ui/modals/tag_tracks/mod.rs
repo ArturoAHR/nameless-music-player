@@ -42,6 +42,8 @@ pub struct TagTracksModal {
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    GoToPreviousTrack,
+    GoToNextTrack,
     SelectTabGroup(usize),
     ToggleTag(TagId),
 
@@ -120,6 +122,12 @@ impl TagTracksModal {
             {
                 outcomes.push(Outcome::Tag(TagOutcome::ToggleTag(*track_id, tag_id)));
             }
+            Message::GoToNextTrack => {
+                outcomes.extend(self.go_to_next_track());
+            }
+            Message::GoToPreviousTrack => {
+                outcomes.extend(self.go_to_previous_track());
+            }
 
             Message::Keyboard(event) => {
                 (task, outcomes) = self.handle_keyboard(
@@ -174,6 +182,7 @@ impl TagTracksModal {
         (task, outcomes)
     }
 
+    #[allow(clippy::too_many_lines)] // TODO: Break down later.
     #[instrument(skip_all)]
     fn handle_keyboard(
         &mut self,
@@ -226,26 +235,22 @@ impl TagTracksModal {
                 key: keyboard::Key::Named(keyboard::key::Named::ArrowRight),
                 ..
             } => {
-                if let Some(outcome) = self.handle_keyboard_scrub(
+                outcomes.extend(self.handle_keyboard_scrub(
                     KeyboardScrubDirection::Right,
                     tracks,
                     playback_controller_status,
-                ) {
-                    outcomes.push(outcome);
-                }
+                ));
             }
             // <- : Scrub playback to the left
             keyboard::Event::KeyPressed {
                 key: keyboard::Key::Named(keyboard::key::Named::ArrowLeft),
                 ..
             } => {
-                if let Some(outcome) = self.handle_keyboard_scrub(
+                outcomes.extend(self.handle_keyboard_scrub(
                     KeyboardScrubDirection::Left,
                     tracks,
                     playback_controller_status,
-                ) {
-                    outcomes.push(outcome);
-                }
+                ));
             }
             // Release -> : Commit seek
             keyboard::Event::KeyReleased {
@@ -254,9 +259,7 @@ impl TagTracksModal {
             } => {
                 self.scrubbing_keyboard_action.right = false;
 
-                if !self.scrubbing_keyboard_action.left {
-                    outcomes.push(self.handle_keyboard_seek());
-                }
+                outcomes.extend(self.handle_keyboard_seek());
             }
             // Release <- : Commit seek
             keyboard::Event::KeyReleased {
@@ -265,9 +268,7 @@ impl TagTracksModal {
             } => {
                 self.scrubbing_keyboard_action.left = false;
 
-                if !self.scrubbing_keyboard_action.right {
-                    outcomes.push(self.handle_keyboard_seek());
-                }
+                outcomes.extend(self.handle_keyboard_seek());
             }
             // Space: Pause/Unpause
             keyboard::Event::KeyPressed {
@@ -307,10 +308,104 @@ impl TagTracksModal {
                 self.tag_groups_cursor =
                     (tag_groups.len() + self.tag_groups_cursor - 1) % tag_groups.len();
             }
+            // Enter: Go to the next track
+            keyboard::Event::KeyPressed {
+                key: keyboard::Key::Named(keyboard::key::Named::Enter),
+                repeat: false,
+                modifiers: keyboard::Modifiers::NONE,
+                ..
+            } => outcomes.extend(self.go_to_next_track()),
+            // Shift + Enter: go to the previous track
+            keyboard::Event::KeyPressed {
+                key: keyboard::Key::Named(keyboard::key::Named::Enter),
+                repeat: false,
+                modifiers: keyboard::Modifiers::SHIFT,
+                ..
+            } => outcomes.extend(self.go_to_previous_track()),
+            // Ctrl + Shift + Enter: go to the first track
+            keyboard::Event::KeyPressed {
+                key: keyboard::Key::Named(keyboard::key::Named::Enter),
+                repeat: false,
+                modifiers,
+                ..
+            } if modifiers == keyboard::Modifiers::SHIFT | keyboard::Modifiers::COMMAND => {
+                outcomes.extend(self.go_to_first_track());
+            }
+            // Ctrl + Enter: go to the last track
+            keyboard::Event::KeyPressed {
+                key: keyboard::Key::Named(keyboard::key::Named::Enter),
+                repeat: false,
+                modifiers: keyboard::Modifiers::COMMAND,
+                ..
+            } => {
+                outcomes.extend(self.go_to_last_track());
+            }
+            // Escape: Close the modal
+            keyboard::Event::KeyPressed {
+                key: keyboard::Key::Named(keyboard::key::Named::Escape),
+                repeat: false,
+                ..
+            } => outcomes.push(Outcome::Modal(ModalOutcome::CloseModal)),
             _ => {}
         }
 
         (task, outcomes)
+    }
+
+    pub fn go_to_next_track(&mut self) -> Option<Outcome> {
+        if self.track_tagging_queue_cursor == self.track_tagging_queue.len() - 1 {
+            return None;
+        }
+
+        self.track_tagging_queue_cursor += 1;
+
+        let track_id = self
+            .track_tagging_queue
+            .get(self.track_tagging_queue_cursor)?;
+
+        Some(Outcome::Playback(PlaybackOutcome::Play(*track_id)))
+    }
+
+    pub fn go_to_previous_track(&mut self) -> Option<Outcome> {
+        if self.track_tagging_queue_cursor == 0 {
+            return None;
+        }
+
+        self.track_tagging_queue_cursor -= 1;
+
+        let track_id = self
+            .track_tagging_queue
+            .get(self.track_tagging_queue_cursor)?;
+
+        Some(Outcome::Playback(PlaybackOutcome::Play(*track_id)))
+    }
+
+    pub fn go_to_first_track(&mut self) -> Option<Outcome> {
+        if self.track_tagging_queue_cursor == 0 {
+            return None;
+        }
+
+        self.track_tagging_queue_cursor = 0;
+
+        let track_id = self
+            .track_tagging_queue
+            .get(self.track_tagging_queue_cursor)?;
+
+        Some(Outcome::Playback(PlaybackOutcome::Play(*track_id)))
+    }
+
+    pub fn go_to_last_track(&mut self) -> Option<Outcome> {
+        if self.track_tagging_queue_cursor == self.track_tagging_queue.len() - 1 {
+            return None;
+        }
+
+        self.track_tagging_queue_cursor = self.track_tagging_queue.len() - 1;
+
+        let track_id = self
+            .track_tagging_queue
+            .get(self.track_tagging_queue_cursor)?;
+
+        Some(Outcome::Playback(PlaybackOutcome::Play(*track_id)))
     }
 
     pub fn handle_keyboard_scrub(
@@ -351,16 +446,20 @@ impl TagTracksModal {
         None
     }
 
-    pub fn handle_keyboard_seek(&mut self) -> Outcome {
+    pub fn handle_keyboard_seek(&mut self) -> Option<Outcome> {
+        if self.scrubbing_keyboard_action.left || self.scrubbing_keyboard_action.right {
+            return None;
+        }
+
         let pre_seek_status = match self.playback_status {
             PlaybackStatus::Playing => PlaybackControllerStatus::Playing,
             PlaybackStatus::Paused => PlaybackControllerStatus::Stopped,
         };
 
-        Outcome::Playback(PlaybackOutcome::Seek {
+        Some(Outcome::Playback(PlaybackOutcome::Seek {
             timestamp: self.current_playback_position as u64,
             post_seek_status: Some(pre_seek_status),
-        })
+        }))
     }
 
     #[instrument(skip(self), level = "debug")]
@@ -402,7 +501,6 @@ impl TagTracksModal {
         track_tag_index: &'a TrackTagIndex,
     ) -> Element<'a, Message, Theme, Renderer> {
         let width = 1000.0;
-        let height = 770.0;
 
         let current_tagging_track_id = self
             .track_tagging_queue
@@ -434,9 +532,10 @@ impl TagTracksModal {
                     track_tags.map(Vec::as_slice)
                 ),
                 vertical_separator(),
-                container(text("Keyboard controls"))
-                    .height(140.0)
-                    .width(Length::Fill),
+                // TODO: Add keyboard controls later on.
+                // container(text("Keyboard controls"))
+                //     .height(140.0)
+                //     .width(Length::Fill),
                 vertical_separator(),
                 container(text("Footer")).height(84.0).width(Length::Fill),
             ]
