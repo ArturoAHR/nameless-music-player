@@ -121,9 +121,9 @@ impl MainPane {
         let columns = vec![
             table::column(TrackTableColumn::NowPlaying, None, move |track: &Track| {
                 if track.id == current_playing_track_id {
-                    icon(icons::PLAY).into()
+                    Element::from(icon(icons::PLAY))
                 } else {
-                    Space::new().into()
+                    Element::from(Space::new())
                 }
             })
             .width(30.0),

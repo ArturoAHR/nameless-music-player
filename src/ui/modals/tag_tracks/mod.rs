@@ -1,6 +1,6 @@
 use iced::{
     Element, Length, Padding, Renderer, Task, keyboard,
-    widget::{column, container, text},
+    widget::{column, container},
 };
 use rustc_hash::FxHashMap;
 use tracing::{debug, instrument};
@@ -18,7 +18,7 @@ use crate::{
     ui::{
         modals::tag_tracks::{
             tag::{get_tag_group_tags, get_tag_index},
-            widgets::{header, playback, tag_group_list, tag_list},
+            widgets::{footer, header, playback, tag_group_list, tag_list},
         },
         theme::{Theme, catalog},
         widgets::separator::vertical_separator,
@@ -537,7 +537,11 @@ impl TagTracksModal {
                 //     .height(140.0)
                 //     .width(Length::Fill),
                 vertical_separator(),
-                container(text("Footer")).height(84.0).width(Length::Fill),
+                footer(
+                    theme,
+                    &self.track_tagging_queue,
+                    self.track_tagging_queue_cursor
+                ),
             ]
             .width(Length::Fill)
             .height(Length::Shrink),

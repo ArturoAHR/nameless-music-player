@@ -1,7 +1,6 @@
-use iced::{
-    Element, Font,
-    widget::{text, text::Catalog},
-};
+use iced::{Font, Renderer, widget::text::Text};
+
+use crate::ui::theme::Theme;
 
 // music-player-icons.ttf
 pub const LOADING: char = '\u{E830}';
@@ -26,15 +25,8 @@ pub const ARROW_RIGHT: char = '\u{E000}';
 pub const CHEVRON_LEFT: char = '\u{E000}';
 pub const CHEVRON_RIGHT: char = '\u{E000}';
 
-pub fn icon<'a, Message, Theme, Renderer>(
-    codepoint: char,
-) -> impl Into<Element<'a, Message, Theme, Renderer>>
-where
-    Theme: Catalog + 'a,
-    Renderer: iced::advanced::text::Renderer + 'a,
-    <Renderer as iced::advanced::text::Renderer>::Font: From<iced::Font>,
-{
+pub fn icon<'a>(codepoint: char) -> Text<'a, Theme, Renderer> {
     const ICON_FONT: Font = Font::with_name("music-player-icons");
 
-    text(codepoint).font(ICON_FONT)
+    iced::widget::text(codepoint).font(ICON_FONT)
 }

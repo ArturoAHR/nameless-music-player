@@ -214,3 +214,42 @@ pub fn tag_list<'a>(
     ]))
     .into()
 }
+
+pub fn footer<'a>(
+    theme: &Theme,
+    track_tagging_queue: &[TrackId],
+    track_tagging_queue_cursor: usize,
+) -> Element<'a, Message, Theme, Renderer> {
+    container(
+        row![
+            button(
+                row![icon(icons::CHEVRON_LEFT), text!("Previous")].spacing(theme.sizes.space.lg)
+            )
+            .on_press_maybe((track_tagging_queue_cursor > 0).then_some(Message::GoToPreviousTrack))
+            .padding(Padding::from([
+                theme.sizes.space.xl,
+                theme.sizes.space.xxxl
+            ]))
+            .style(catalog::button::modal_footer_button),
+            Space::new().width(Length::Fill),
+            button(row![text!("Next"), icon(icons::CHEVRON_RIGHT)].spacing(theme.sizes.space.lg))
+                .on_press_maybe(
+                    (track_tagging_queue_cursor < track_tagging_queue.len() - 1)
+                        .then_some(Message::GoToNextTrack)
+                )
+                .padding(Padding::from([
+                    theme.sizes.space.xl,
+                    theme.sizes.space.xxxl
+                ]))
+                .style(catalog::button::modal_footer_button)
+        ]
+        .spacing(theme.sizes.space.xl),
+    )
+    .height(84.0)
+    .width(Length::Fill)
+    .padding(Padding::from([
+        theme.sizes.space.xl,
+        theme.sizes.space.xxxxl,
+    ]))
+    .into()
+}
