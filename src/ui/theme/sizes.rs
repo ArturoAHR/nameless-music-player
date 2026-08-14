@@ -35,7 +35,7 @@ impl Sizes {
             radius_xl: 16.0,
             radius_xxl: 20.0,
             radius_xxxl: 24.0,
-            radius_pill: 9999.0,
+            radius_round: 9999.0,
         },
         component: ComponentSizes {
             app_header_height: 32.0,
@@ -101,7 +101,7 @@ pub struct Borders {
     pub radius_xl: f32,
     pub radius_xxl: f32,
     pub radius_xxxl: f32,
-    pub radius_pill: f32,
+    pub radius_round: f32,
 }
 
 #[derive(Debug, Clone, Copy)]

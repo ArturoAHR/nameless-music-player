@@ -40,7 +40,9 @@ pub fn header<'a>(
         ]
         .spacing(theme.sizes.space.lg),
         Space::new().width(Length::Fill),
-        button(icon(icons::CLOSE)).on_press(Message::Close)
+        button(icon(icons::CLOSE))
+            .on_press(Message::Close)
+            .style(catalog::button::clear_icon_button)
     ])
     .height(128.0)
     .width(Length::Fill)
