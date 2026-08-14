@@ -209,11 +209,7 @@ impl TagTracksModal {
                     return (task, outcomes);
                 };
 
-                let Some(tag_index) = character
-                    .chars()
-                    .next()
-                    .and_then(|character| get_tag_index(&character))
-                else {
+                let Some(tag_index) = character.chars().next().and_then(get_tag_index) else {
                     return (task, outcomes);
                 };
 

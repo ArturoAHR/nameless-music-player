@@ -4,8 +4,9 @@ use crate::tag::models::{Tag, TagGroupId};
 
 const TAG_KEYS: &str = "1234567890qwertyuiopasdfghjklzxcvbnm";
 
-pub fn get_tag_index(key: &char) -> Option<usize> {
-    TAG_KEYS.chars().position(|character| *key == character)
+pub fn get_tag_index(key: char) -> Option<usize> {
+    let key = key.to_ascii_lowercase();
+    TAG_KEYS.chars().position(|character| key == character)
 }
 
 pub fn get_tag_keys() -> Chars<'static> {
