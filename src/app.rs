@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use iced_split::{horizontal_split, vertical_split};
+use itertools::Itertools;
 use rustc_hash::FxHashMap;
 use sqlx::SqlitePool;
 
@@ -228,7 +229,18 @@ impl App {
                 self.tracks = tracks.into_iter().map(|track| (track.id, track)).collect();
 
                 // TODO: Add loading state to main pane before setting the displayed tracks
-                self.displayed_track_ids = self.tracks.keys().copied().collect();
+                self.displayed_track_ids = self
+                    .tracks
+                    .iter()
+                    .sorted_by_cached_key(|(_track_id, track)| {
+                        (
+                            track.artist.as_deref().unwrap_or("Unknown").to_lowercase(),
+                            track.title.as_deref().unwrap_or("Untitled").to_lowercase(),
+                        )
+                    })
+                    .map(|(track_id, _track)| track_id)
+                    .copied()
+                    .collect();
 
                 // info!("Tracks loaded successfully");
             }
