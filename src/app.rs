@@ -109,6 +109,7 @@ pub enum Message {
     LoadedTagLibrary(Result<TagLibrary, AppError>),
     ScanDirectory(Option<Vec<PathBuf>>),
     ScannedDirectory(Result<(), AppError>),
+    ToggledTrackTag(Result<(), AppError>),
 
     AudioPipelineEventChannelReady(
         iced::futures::channel::mpsc::UnboundedSender<AudioPipelineThreadEvent>,
@@ -208,8 +209,6 @@ impl App {
         let mut task = Task::none();
 
         match message {
-            Message::Ui(message) => task = self.handle_ui(message),
-
             Message::AudioPipelineEventChannelReady(audio_pipeline_event_sender) => {
                 match self
                     .playback_controller
@@ -269,16 +268,27 @@ impl App {
                     Message::ScannedDirectory,
                 );
             }
-            Message::ScanDirectory(None) => {}
+            Message::ScanDirectory(None) => {
+                info!("Scan directory operation was cancelled");
+            }
             Message::ScannedDirectory(scan_result) => {
-                task = match scan_result {
-                    Ok(()) => Task::done(LoadTracks),
-                    Err(_) => Task::none(),
-                };
+                match scan_result {
+                    Ok(()) => task = Task::done(LoadTracks),
+                    Err(error) => {
+                        error!("Failed to scan directory: {error}");
+                    }
+                }
 
                 self.status = AppStatus::FinishedAddingTracks;
             }
+            Message::ToggledTrackTag(toggle_result) => match toggle_result {
+                Ok(()) => {}
+                Err(error) => {
+                    error!("Failed to toggle tag: {error}");
+                }
+            },
 
+            Message::Ui(message) => task = self.handle_ui(message),
             Message::PlaybackController(message) => task = self.handle_playback_controller(message),
         }
 

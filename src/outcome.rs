@@ -6,7 +6,10 @@ use crate::{
     error::AppError,
     outcome::TagOutcome::SaveTags,
     playback::{controller::PlaybackControllerStatus, queue::entry::PlaybackQueueEntryId},
-    tag::models::TagId,
+    tag::{
+        models::TagId,
+        repository::{delete_track_tag, insert_track_tag},
+    },
     track::models::TrackId,
     ui::components::playback_bar::PlaybackBarStatus,
 };
@@ -201,11 +204,27 @@ impl App {
 
     #[instrument(skip(self))]
     pub fn handle_tag_outcome(&mut self, outcome: TagOutcome) -> Result<Task<Message>, AppError> {
-        let task = Task::none();
+        let mut task = Task::none();
 
         match outcome {
             TagOutcome::ToggleTag(track_id, tag_id) => {
+                let tag_track_exists = self.track_tag_index.exists(track_id, tag_id);
+
                 self.track_tag_index.toggle_track_tag(track_id, tag_id);
+
+                // Instead of toggling at the database level we explicitly either delete or insert
+                // to ensure consistency with the in memory track tag index
+                let pool = self.pool.clone();
+                task = Task::perform(
+                    async move {
+                        if tag_track_exists {
+                            delete_track_tag(pool, track_id, tag_id).await
+                        } else {
+                            insert_track_tag(pool, track_id, tag_id).await
+                        }
+                    },
+                    Message::ToggledTrackTag,
+                );
             }
             SaveTags => {
                 warn!("Saving current track tag index is still not implemented");
