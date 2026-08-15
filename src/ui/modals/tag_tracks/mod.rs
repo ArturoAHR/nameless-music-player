@@ -81,6 +81,7 @@ pub enum KeyboardScrubDirection {
     Left,
 }
 
+// TODO: Add UI for empty states
 impl TagTracksModal {
     pub fn new(track_tagging_queue: Vec<TrackId>) -> Self {
         Self {
@@ -500,12 +501,14 @@ impl TagTracksModal {
 
         let current_tagging_track_id = self
             .track_tagging_queue
-            .get(self.track_tagging_queue_cursor)
-            .unwrap();
-        let track = tracks.get(current_tagging_track_id);
+            .get(self.track_tagging_queue_cursor);
+        let track = current_tagging_track_id
+            .and_then(|current_tagging_track_id| tracks.get(current_tagging_track_id));
         let track_number = self.track_tagging_queue_cursor + 1;
         let track_total = self.track_tagging_queue.len();
-        let track_tags = track_tag_index.get_track_tags(*current_tagging_track_id);
+        let track_tags = current_tagging_track_id.and_then(|current_tagging_track_id| {
+            track_tag_index.get_track_tags(*current_tagging_track_id)
+        });
 
         container(
             column![
@@ -514,7 +517,7 @@ impl TagTracksModal {
                 playback(
                     theme,
                     tracks,
-                    Some(current_tagging_track_id),
+                    current_tagging_track_id,
                     self.current_playback_position
                 ),
                 vertical_separator(),

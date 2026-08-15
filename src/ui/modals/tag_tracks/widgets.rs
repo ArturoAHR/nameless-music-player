@@ -3,6 +3,7 @@ use iced::{
     widget::{Space, button, center, column, container, row, slider, text},
 };
 use rustc_hash::FxHashMap;
+use std::iter;
 
 use crate::{
     tag::models::{Tag, TagGroup, TagId},
@@ -159,11 +160,18 @@ pub fn tag_list<'a>(
     tag_groups_cursor: usize,
     track_tags: Option<&[TagId]>,
 ) -> Element<'a, Message, Theme, Renderer> {
-    let selected_tag_group = tag_groups.get(tag_groups_cursor).unwrap();
-    let tag_group_tags = tags
-        .iter()
-        .filter(|tag| tag.tag_group_id == selected_tag_group.id);
+    let selected_tag_group = tag_groups.get(tag_groups_cursor);
+    let mut tag_group_tags: Box<dyn Iterator<Item = &Tag>> = Box::new(iter::empty());
     let mut tag_characters = get_tag_keys();
+    let mut selected_tag_group_name = "No tag group selected";
+
+    if let Some(selected_tag_group) = selected_tag_group {
+        selected_tag_group_name = &selected_tag_group.name;
+        tag_group_tags = Box::new(
+            tags.iter()
+                .filter(|&tag| tag.tag_group_id == selected_tag_group.id),
+        );
+    }
 
     let tag_toggle_buttons: Vec<Element<'a, Message, Theme, Renderer>> = tag_group_tags
         .map(|tag| {
@@ -203,7 +211,7 @@ pub fn tag_list<'a>(
 
     container(
         column![
-            text(&selected_tag_group.name),
+            text(selected_tag_group_name),
             row(tag_toggle_buttons).spacing(theme.sizes.space.md).wrap()
         ]
         .spacing(theme.sizes.space.xl),
