@@ -535,7 +535,7 @@ impl TagTracksModal {
                 // container(text("Keyboard controls"))
                 //     .height(140.0)
                 //     .width(Length::Fill),
-                vertical_separator(),
+                // vertical_separator(),
                 footer(
                     theme,
                     &self.track_tagging_queue,
