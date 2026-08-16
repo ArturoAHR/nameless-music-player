@@ -6,7 +6,7 @@ use tracing::instrument;
 
 use crate::{
     event::Event,
-    ui::{components::navigation_bar::navigation_bar_menu::navigation_bar_menu, theme::Theme},
+    ui::{components::navigation_bar::navigation_bar_menu::main_menu_dropdown, theme::Theme},
 };
 
 pub mod handler;
@@ -42,7 +42,7 @@ impl NavigationBar {
 
     pub fn view<'a>(&'a self, theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
         container(
-            row![navigation_bar_menu(theme)]
+            row![main_menu_dropdown(theme)]
                 .align_y(alignment::Vertical::Center)
                 .padding(Padding::from([0.0, theme.sizes.space.lg]))
                 .height(Length::Fill),
