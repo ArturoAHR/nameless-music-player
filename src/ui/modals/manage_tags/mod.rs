@@ -7,9 +7,9 @@ use tracing::instrument;
 use crate::{
     event::Event,
     outcome::ModalOutcome,
-    tag::models::{Tag, TagGroup},
+    tag::models::{Tag, TagGroup, TagGroupId},
     ui::{
-        modals::manage_tags::widgets::header,
+        modals::manage_tags::widgets::{header, tag_group_pane, tag_group_tags_pane},
         theme::{Theme, catalog},
         widgets::separator::{horizontal_separator, vertical_separator},
     },
@@ -19,11 +19,14 @@ pub mod handler;
 pub mod widgets;
 
 #[derive(Default)]
-pub struct ManageTagsModal {}
+pub struct ManageTagsModal {
+    selected_tag_group_id: Option<TagGroupId>,
+}
 
 #[derive(Debug, Clone)]
 pub enum Message {
     Close,
+    SelectTagGroup(TagGroupId),
 }
 
 pub enum Outcome {
@@ -32,7 +35,9 @@ pub enum Outcome {
 
 impl ManageTagsModal {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            selected_tag_group_id: None,
+        }
     }
 
     #[instrument(
@@ -51,6 +56,9 @@ impl ManageTagsModal {
 
         match message {
             Message::Close => outcomes.push(Outcome::Modal(ModalOutcome::CloseModal)),
+            Message::SelectTagGroup(tag_group_id) => {
+                self.selected_tag_group_id = Some(tag_group_id);
+            }
         }
 
         (task, outcomes)
@@ -70,31 +78,25 @@ impl ManageTagsModal {
         tags: &'a [Tag],
         tag_groups: &'a [TagGroup],
     ) -> Element<'a, Message, Theme, Renderer> {
+        let tag_group = self
+            .selected_tag_group_id
+            .and_then(|selected_tag_group_id| {
+                tag_groups
+                    .iter()
+                    .find(|tag_group| tag_group.id == selected_tag_group_id)
+            });
+        let tag_group_tags = tags.iter().filter(|&tag| {
+            self.selected_tag_group_id
+                .is_some_and(|selected_tag_group_id| tag.tag_group_id == selected_tag_group_id)
+        });
+
         container(column![
             header(theme, tag_groups),
             vertical_separator(),
             row![
-                column![
-                    container(text("Tag groups list"))
-                        .height(Length::Fill)
-                        .width(Length::Fill),
-                    vertical_separator(),
-                    container(text("Tag groups input"))
-                        .height(80.0)
-                        .width(Length::Fill)
-                ]
-                .width(Length::FillPortion(1)),
+                tag_group_pane(theme, tag_groups),
                 horizontal_separator(),
-                column![
-                    container(text("Tags group tags list"))
-                        .height(Length::Fill)
-                        .width(Length::Fill),
-                    vertical_separator(),
-                    container(text("Tag groups tags input"))
-                        .height(80.0)
-                        .width(Length::Fill)
-                ]
-                .width(Length::FillPortion(2))
+                tag_group_tags_pane(theme, tag_group, tag_group_tags)
             ]
             .height(Length::Fill)
             .width(Length::Fill),
