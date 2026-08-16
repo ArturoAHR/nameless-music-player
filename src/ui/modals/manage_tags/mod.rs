@@ -9,12 +9,14 @@ use crate::{
     outcome::ModalOutcome,
     tag::models::{Tag, TagGroup},
     ui::{
+        modals::manage_tags::widgets::header,
         theme::{Theme, catalog},
         widgets::separator::{horizontal_separator, vertical_separator},
     },
 };
 
 pub mod handler;
+pub mod widgets;
 
 #[derive(Default)]
 pub struct ManageTagsModal {}
@@ -69,7 +71,7 @@ impl ManageTagsModal {
         tag_groups: &'a [TagGroup],
     ) -> Element<'a, Message, Theme, Renderer> {
         container(column![
-            container(text("Header")).height(64.0).width(Length::Fill),
+            header(theme, tag_groups),
             vertical_separator(),
             row![
                 column![
@@ -80,7 +82,8 @@ impl ManageTagsModal {
                     container(text("Tag groups input"))
                         .height(80.0)
                         .width(Length::Fill)
-                ],
+                ]
+                .width(Length::FillPortion(1)),
                 horizontal_separator(),
                 column![
                     container(text("Tags group tags list"))
@@ -91,14 +94,15 @@ impl ManageTagsModal {
                         .height(80.0)
                         .width(Length::Fill)
                 ]
+                .width(Length::FillPortion(2))
             ]
             .height(Length::Fill)
             .width(Length::Fill),
             vertical_separator(),
-            container(text("Footer")).height(50.0).width(Length::Fill)
+            container(text("Footer")).height(84.0).width(Length::Fill)
         ])
-        .width(670.0)
-        .height(500.0)
+        .width(890.0)
+        .height(660.0)
         // Offsets inner containers so they don't overlap modal container border.
         .padding(Padding::from(1.0))
         .style(catalog::container::modal)
