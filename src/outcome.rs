@@ -25,6 +25,7 @@ pub enum Outcome {
 pub enum ModalOutcome {
     CloseModal,
     OpenTagTracksModal(Vec<TrackId>),
+    OpenManageTagsModal,
 }
 
 #[derive(Debug, Clone)]
@@ -196,6 +197,9 @@ impl App {
 
                 self.modal_controller
                     .open_tag_tracks_modal(track_tagging_queue);
+            }
+            ModalOutcome::OpenManageTagsModal => {
+                self.modal_controller.open_manage_tags_modal();
             }
         }
 

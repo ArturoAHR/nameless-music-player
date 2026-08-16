@@ -61,7 +61,11 @@ pub fn file_menu<'a>(theme: &Theme) -> DropdownMenu<'a, Message> {
 pub fn edit_menu<'a>(theme: &Theme) -> DropdownMenu<'a, Message> {
     dropdown_menu(
         theme,
-        vec![dropdown_menu_option(theme, "Manage Tags", None)],
+        vec![dropdown_menu_option(
+            theme,
+            "Manage Tags",
+            Some(Message::SelectedEditMenuManageTagsOption),
+        )],
     )
     .width(160.0)
     .offset(12.0)
