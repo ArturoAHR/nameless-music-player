@@ -1,6 +1,6 @@
 use iced::{
     Element, Length, Padding, Renderer, Task,
-    widget::{Space, column, container},
+    widget::{column, container, row, text},
 };
 use tracing::instrument;
 
@@ -8,7 +8,10 @@ use crate::{
     event::Event,
     outcome::ModalOutcome,
     tag::models::{Tag, TagGroup},
-    ui::theme::{Theme, catalog},
+    ui::{
+        theme::{Theme, catalog},
+        widgets::separator::{horizontal_separator, vertical_separator},
+    },
 };
 
 pub mod handler;
@@ -65,14 +68,40 @@ impl ManageTagsModal {
         tags: &'a [Tag],
         tag_groups: &'a [TagGroup],
     ) -> Element<'a, Message, Theme, Renderer> {
-        let width = 1000.0;
-
-        container(Space::new())
-            .width(width)
-            .height(Length::Shrink)
-            // Offsets inner containers so they don't overlap modal container border.
-            .padding(Padding::from(1.0))
-            .style(catalog::container::modal)
-            .into()
+        container(column![
+            container(text("Header")).height(64.0).width(Length::Fill),
+            vertical_separator(),
+            row![
+                column![
+                    container(text("Tag groups list"))
+                        .height(Length::Fill)
+                        .width(Length::Fill),
+                    vertical_separator(),
+                    container(text("Tag groups input"))
+                        .height(80.0)
+                        .width(Length::Fill)
+                ],
+                horizontal_separator(),
+                column![
+                    container(text("Tags group tags list"))
+                        .height(Length::Fill)
+                        .width(Length::Fill),
+                    vertical_separator(),
+                    container(text("Tag groups tags input"))
+                        .height(80.0)
+                        .width(Length::Fill)
+                ]
+            ]
+            .height(Length::Fill)
+            .width(Length::Fill),
+            vertical_separator(),
+            container(text("Footer")).height(50.0).width(Length::Fill)
+        ])
+        .width(670.0)
+        .height(500.0)
+        // Offsets inner containers so they don't overlap modal container border.
+        .padding(Padding::from(1.0))
+        .style(catalog::container::modal)
+        .into()
     }
 }
