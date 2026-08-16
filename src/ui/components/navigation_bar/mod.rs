@@ -1,5 +1,5 @@
 use iced::{
-    Element, Length, Renderer, Task,
+    Element, Length, Padding, Renderer, Task, alignment,
     widget::{container, row},
 };
 use tracing::instrument;
@@ -41,13 +41,18 @@ impl NavigationBar {
     }
 
     pub fn view<'a>(&'a self, theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
-        container(row![navigation_bar_menu(theme)])
-            .height(Length::Fixed(theme.sizes.component.nav_bar_height))
-            .width(Length::Fill)
-            .style(|theme: &Theme| container::Style {
-                background: Some(theme.palette.surface_sunken.into()),
-                ..container::Style::default()
-            })
-            .into()
+        container(
+            row![navigation_bar_menu(theme)]
+                .align_y(alignment::Vertical::Center)
+                .padding(Padding::from([0.0, theme.sizes.space.lg]))
+                .height(Length::Fill),
+        )
+        .height(Length::Fixed(theme.sizes.component.nav_bar_height))
+        .width(Length::Fill)
+        .style(|theme: &Theme| container::Style {
+            background: Some(theme.palette.surface_sunken.into()),
+            ..container::Style::default()
+        })
+        .into()
     }
 }

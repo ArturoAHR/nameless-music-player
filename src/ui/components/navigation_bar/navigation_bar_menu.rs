@@ -1,8 +1,8 @@
-use iced::{Element, Renderer, widget::button};
+use iced::{Element, Length, Padding, Renderer, widget::button};
 
 use crate::ui::{
     components::navigation_bar::Message,
-    theme::Theme,
+    theme::{Theme, catalog},
     widgets::{
         icons::{self, icon},
         menu::{
@@ -14,7 +14,13 @@ use crate::ui::{
 pub fn navigation_bar_menu<'a>(theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
     let dropdown = dropdown_toggle(
         theme,
-        button(icon(icons::MENU)),
+        button(
+            icon(icons::MENU)
+                .size(theme.sizes.font.h2)
+                .color(theme.palette.text),
+        )
+        .padding(Padding::default())
+        .style(catalog::button::clear_icon_button),
         dropdown_menu(
             theme,
             vec![
@@ -31,14 +37,17 @@ pub fn navigation_bar_menu<'a>(theme: &Theme) -> Element<'a, Message, Theme, Ren
                                 Some(Message::SelectedScanDirectoryOption),
                             ),
                         ],
-                    ),
+                    )
+                    .width(220.0)
+                    .offset(12.0),
                 ),
                 dropdown_menu_option(theme, "Edit", None),
                 dropdown_menu_option(theme, "View", None),
                 dropdown_menu_option(theme, "Controls", None),
                 dropdown_menu_option(theme, "Help", None),
             ],
-        ),
+        )
+        .width(Length::Fixed(100.0)),
     );
 
     dropdown.into()

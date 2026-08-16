@@ -1,7 +1,7 @@
-use iced::{Background, Border, Color, Shadow, Vector};
+use iced::{Background, Border, Color, Shadow, Vector, border::Radius};
 use iced_aw::style::{
-    menu_bar::{Catalog, Style},
     Status,
+    menu_bar::{Catalog, Style},
 };
 
 use crate::ui::theme::Theme;
@@ -12,7 +12,7 @@ impl Catalog for Theme {
     type Class<'a> = StyleFn<'a>;
 
     fn default<'a>() -> Self::Class<'a> {
-        Box::new(primary)
+        Box::new(default)
     }
 
     fn style(&self, class: &Self::Class<'_>, status: Status) -> Style {
@@ -20,39 +20,34 @@ impl Catalog for Theme {
     }
 }
 
-pub fn primary(theme: &Theme, _status: Status) -> Style {
-    let p = &theme.palette;
-    let s = &theme.sizes;
-
+pub fn default(theme: &Theme, _status: Status) -> Style {
     Style {
-        bar_background: Background::Color(p.surface_raised),
+        bar_background: Color::TRANSPARENT.into(),
         bar_border: Border {
             color: Color::TRANSPARENT,
             width: 0.0,
             radius: 0.0.into(),
         },
-        bar_shadow: Shadow::default(),
 
-        menu_background: Background::Color(p.surface_overlay),
+        menu_background: theme.palette.surface_raised.into(),
         menu_border: Border {
-            color: p.border,
-            width: s.border.width,
-            radius: s.border.radius_md.into(),
+            color: theme.palette.border,
+            width: theme.sizes.border.width,
+            radius: Radius::from(theme.sizes.border.radius_md),
         },
         menu_shadow: Shadow {
-            color: Color {
-                a: 0.35,
-                ..Color::BLACK
-            },
-            offset: Vector::new(0.0, 4.0),
-            blur_radius: 12.0,
+            color: Color::BLACK,
+            blur_radius: theme.sizes.border.radius_md,
+            offset: Vector::new(theme.sizes.space.sm, theme.sizes.space.sm),
         },
 
-        path: Background::Color(p.hover),
+        path: Background::Color(theme.palette.hover),
         path_border: Border {
             color: Color::TRANSPARENT,
             width: 0.0,
-            radius: s.border.radius_sm.into(),
+            radius: theme.sizes.border.radius_sm.into(),
         },
+
+        ..Style::default()
     }
 }
