@@ -9,7 +9,7 @@ use crate::{
     outcome::ModalOutcome,
     tag::models::{Tag, TagGroup, TagGroupId},
     ui::{
-        modals::manage_tags::widgets::{header, tag_group_pane, tag_group_tags_pane},
+        modals::manage_tags::widgets::{footer, header, tag_group_pane, tag_group_tags_pane},
         theme::{Theme, catalog},
         widgets::separator::{horizontal_separator, vertical_separator},
     },
@@ -101,7 +101,7 @@ impl ManageTagsModal {
             .height(Length::Fill)
             .width(Length::Fill),
             vertical_separator(),
-            container(text("Footer")).height(84.0).width(Length::Fill)
+            footer(theme)
         ])
         .width(890.0)
         .height(660.0)

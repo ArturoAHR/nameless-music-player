@@ -8,3 +8,4 @@ pub mod slider;
 pub mod split;
 pub mod table;
 pub mod text;
+pub mod text_input;
