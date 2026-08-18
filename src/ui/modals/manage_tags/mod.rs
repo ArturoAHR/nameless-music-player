@@ -1,12 +1,12 @@
 use iced::{
     Element, Length, Padding, Renderer, Task,
-    widget::{column, container, row, text},
+    widget::{column, container, row},
 };
 use tracing::instrument;
 
 use crate::{
     event::Event,
-    outcome::ModalOutcome,
+    outcome::{ModalOutcome, TagOutcome},
     tag::models::{Tag, TagGroup, TagGroupId},
     ui::{
         modals::manage_tags::widgets::{footer, header, tag_group_pane, tag_group_tags_pane},
@@ -21,22 +21,31 @@ pub mod widgets;
 #[derive(Default)]
 pub struct ManageTagsModal {
     selected_tag_group_id: Option<TagGroupId>,
+    new_tag_group_name_input_text: String,
+    new_tag_name_input_text: String,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
     Close,
     SelectTagGroup(TagGroupId),
+    NewTagGroupNameInputTextChanged(String),
+    AddNewTagGroup,
+    NewTagNameInputTextChanged(String),
+    AddNewTag,
 }
 
 pub enum Outcome {
     Modal(ModalOutcome),
+    Tag(TagOutcome),
 }
 
 impl ManageTagsModal {
     pub fn new() -> Self {
         Self {
             selected_tag_group_id: None,
+            new_tag_group_name_input_text: String::new(),
+            new_tag_name_input_text: String::new(),
         }
     }
 
@@ -58,6 +67,30 @@ impl ManageTagsModal {
             Message::Close => outcomes.push(Outcome::Modal(ModalOutcome::CloseModal)),
             Message::SelectTagGroup(tag_group_id) => {
                 self.selected_tag_group_id = Some(tag_group_id);
+            }
+            Message::NewTagGroupNameInputTextChanged(new_tag_group_name_input_text) => {
+                self.new_tag_group_name_input_text = new_tag_group_name_input_text;
+            }
+            Message::NewTagNameInputTextChanged(new_tag_name_input_text) => {
+                self.new_tag_name_input_text = new_tag_name_input_text;
+            }
+            Message::AddNewTag if let Some(selected_tag_group_id) = self.selected_tag_group_id => {
+                outcomes.push(Outcome::Tag(TagOutcome::AddNewTag(
+                    selected_tag_group_id,
+                    self.new_tag_name_input_text.clone(),
+                )));
+
+                self.new_tag_name_input_text.clear();
+            }
+            Message::AddNewTagGroup => {
+                outcomes.push(Outcome::Tag(TagOutcome::AddNewTagGroup(
+                    self.new_tag_group_name_input_text.clone(),
+                )));
+
+                self.new_tag_group_name_input_text.clear();
+            }
+            Message::AddNewTag => {
+                // Not reachable
             }
         }
 
@@ -94,9 +127,14 @@ impl ManageTagsModal {
             header(theme, tag_groups),
             vertical_separator(),
             row![
-                tag_group_pane(theme, tag_groups),
+                tag_group_pane(theme, tag_groups, &self.new_tag_group_name_input_text),
                 horizontal_separator(),
-                tag_group_tags_pane(theme, tag_group, tag_group_tags)
+                tag_group_tags_pane(
+                    theme,
+                    tag_group,
+                    tag_group_tags,
+                    &self.new_tag_name_input_text
+                )
             ]
             .height(Length::Fill)
             .width(Length::Fill),

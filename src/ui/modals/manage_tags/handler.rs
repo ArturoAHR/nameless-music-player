@@ -27,6 +27,7 @@ impl ModalController {
             .into_iter()
             .map(|outcome| match outcome {
                 Outcome::Modal(outcome) => modals::Outcome::Modal(outcome),
+                Outcome::Tag(outcome) => modals::Outcome::Tag(outcome),
             })
             .collect();
 

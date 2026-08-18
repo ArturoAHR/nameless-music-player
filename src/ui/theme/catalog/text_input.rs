@@ -20,7 +20,7 @@ impl Catalog for Theme {
     }
 }
 
-pub fn default(theme: &Theme, status: Status) -> Style {
+pub fn default(theme: &Theme, _status: Status) -> Style {
     Style {
         border: Border {
             color: theme.palette.border,

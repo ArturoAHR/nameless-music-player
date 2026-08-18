@@ -107,10 +107,15 @@ pub enum Message {
     LoadTracks,
     LoadedTracks(Result<Vec<Track>, AppError>),
     LoadTagLibrary,
+    ReloadTagLibrary,
     LoadedTagLibrary(Result<TagLibrary, AppError>),
     ScanDirectory(Option<Vec<PathBuf>>),
     ScannedDirectory(Result<(), AppError>),
     ToggledTrackTag(Result<(), AppError>),
+    AddedTag(Result<(), AppError>),
+    DeletedTag(Result<(), AppError>),
+    InsertedTagGroup(Result<(), AppError>),
+    DeletedTagGroup(Result<(), AppError>),
 
     AudioPipelineEventChannelReady(
         iced::futures::channel::mpsc::UnboundedSender<AudioPipelineThreadEvent>,
@@ -247,7 +252,7 @@ impl App {
             Message::LoadedTracks(Err(error)) => {
                 error!("Failed to load tracks: {error}");
             }
-            Message::LoadTagLibrary => {
+            Message::LoadTagLibrary | Message::ReloadTagLibrary => {
                 let pool = self.pool.clone();
 
                 task = Task::perform(
@@ -270,6 +275,22 @@ impl App {
             }
             Message::LoadedTagLibrary(Err(error)) => {
                 error!("Failed to load tag library: {error}");
+            }
+            Message::AddedTag(Ok(()))
+            | Message::InsertedTagGroup(Ok(()))
+            | Message::DeletedTag(Ok(()))
+            | Message::DeletedTagGroup(Ok(())) => {}
+            Message::AddedTag(Err(error)) => {
+                error!("Failed to insert tag: {error}");
+            }
+            Message::DeletedTag(Err(error)) => {
+                error!("Failed to delete tag: {error}");
+            }
+            Message::InsertedTagGroup(Err(error)) => {
+                error!("Failed to insert tag group: {error}");
+            }
+            Message::DeletedTagGroup(Err(error)) => {
+                error!("Failed to delete tag: {error}");
             }
             Message::ScanDirectory(Some(directories)) => {
                 let pool = self.pool.clone();

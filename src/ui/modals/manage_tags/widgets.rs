@@ -47,11 +47,12 @@ pub fn header<'a>(theme: &Theme, tag_groups: &[TagGroup]) -> Element<'a, Message
 pub fn tag_group_pane<'a>(
     theme: &Theme,
     tag_groups: &'a [TagGroup],
+    new_tag_group_name: &str,
 ) -> Element<'a, Message, Theme, Renderer> {
     column![
         tag_group_list(theme, tag_groups),
         vertical_separator(),
-        tag_group_input(theme)
+        tag_group_input(theme, new_tag_group_name)
     ]
     .height(Length::Fill)
     .width(Length::FillPortion(1))
@@ -86,13 +87,19 @@ pub fn tag_group_list<'a>(
     .into()
 }
 
-pub fn tag_group_input<'a>(theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
+pub fn tag_group_input<'a>(
+    theme: &Theme,
+    new_tag_group_name: &str,
+) -> Element<'a, Message, Theme, Renderer> {
     container(
         column![
             text("New group")
                 .size(theme.sizes.font.small)
                 .color(theme.palette.text_muted),
-            text_input("Group name", "").padding(Padding::from(theme.sizes.space.lg))
+            text_input("Group name", new_tag_group_name)
+                .on_input(Message::NewTagGroupNameInputTextChanged)
+                .on_submit(Message::AddNewTagGroup)
+                .padding(Padding::from(theme.sizes.space.lg))
         ]
         .spacing(theme.sizes.space.md),
     )
@@ -106,6 +113,7 @@ pub fn tag_group_tags_pane<'a>(
     theme: &Theme,
     tag_group: Option<&'a TagGroup>,
     tag_group_tags: impl Iterator<Item = &'a Tag>,
+    new_tag_name: &str,
 ) -> Element<'a, Message, Theme, Renderer> {
     let Some(tag_group) = tag_group else {
         return center(
@@ -126,7 +134,7 @@ pub fn tag_group_tags_pane<'a>(
     column![
         tag_group_tags_list(theme, tag_group, tag_group_tags),
         vertical_separator(),
-        tag_groups_tags_input(theme)
+        tag_groups_tags_input(theme, new_tag_name)
     ]
     .width(Length::FillPortion(2))
     .padding(Padding::from([theme.sizes.space.xl, theme.sizes.space.xxl]))
@@ -163,13 +171,19 @@ pub fn tag_group_tags_list<'a>(
     .into()
 }
 
-pub fn tag_groups_tags_input<'a>(theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
+pub fn tag_groups_tags_input<'a>(
+    theme: &Theme,
+    new_tag_name: &str,
+) -> Element<'a, Message, Theme, Renderer> {
     container(
         column![
             text("New tag")
                 .size(theme.sizes.font.small)
                 .color(theme.palette.text_muted),
-            text_input("Tag name", "").padding(Padding::from(theme.sizes.space.lg))
+            text_input("Tag name", new_tag_name)
+                .on_input(Message::NewTagNameInputTextChanged)
+                .on_submit(Message::AddNewTag)
+                .padding(Padding::from(theme.sizes.space.lg))
         ]
         .spacing(theme.sizes.space.md),
     )
