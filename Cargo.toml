@@ -57,7 +57,7 @@ tracing = { version = "0.1.44", features = ["max_level_trace", "release_max_leve
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
 tracing-appender = "0.2.5"
 dotenvy = "0.15.7"
-cpal = "0.17.3"
+cpal = { version = "0.17.3", features = ["audio_thread_priority"] }
 rtrb = "0.3.4"
 rubato = "3.0.0"
 iced_split = "0.1.0"
