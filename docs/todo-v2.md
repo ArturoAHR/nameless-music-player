@@ -6,3 +6,9 @@
 
 - Add Keyboard controls guide
 - Add Empty state with call to action that opens Manage Tags modal.
+
+# Tag Management Modal
+
+- Add error handling when trying to add duplicate tags/tag groups.
+- Improve appearance of modal's body
+- Add tag renaming

@@ -5,9 +5,38 @@ use tracing::instrument;
 
 use crate::{
     error::AppError,
-    tag::models::{TagId, TrackTagIden},
+    tag::models::{TagGroupId, TagGroupIden, TagId, TagIden, TrackTagIden},
     track::models::TrackId,
 };
+
+#[instrument(skip(pool))]
+pub async fn insert_tag(
+    pool: SqlitePool,
+    tag_group_id: TagGroupId,
+    tag_name: String,
+) -> Result<(), AppError> {
+    let (sql, values) = Query::insert()
+        .columns([TagIden::Name, TagIden::TagGroupId])
+        .into_table(TagIden::Table)
+        .values([tag_name.into(), tag_group_id.into()])?
+        .build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+pub async fn insert_tag_group(pool: SqlitePool, tag_group_name: String) -> Result<(), AppError> {
+    let (sql, values) = Query::insert()
+        .columns([TagGroupIden::Name])
+        .into_table(TagGroupIden::Table)
+        .values([tag_group_name.into()])?
+        .build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
 
 #[instrument(skip(pool))]
 pub async fn insert_track_tag(

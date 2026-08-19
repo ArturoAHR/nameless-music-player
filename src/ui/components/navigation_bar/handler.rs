@@ -30,6 +30,7 @@ impl App {
         let mut tasks = vec![component_task];
         for outcome in outcomes {
             let outcome_task = match outcome {
+                // TODO: Move this to the outcome system
                 Outcome::OpenSelectDirectoryDialog => Task::perform(
                     async {
                         AsyncFileDialog::new().pick_folders().await.map(|handles| {
@@ -38,6 +39,7 @@ impl App {
                     },
                     app::Message::ScanDirectory,
                 ),
+                Outcome::Modal(outcome) => self.handle_outcome(app::Outcome::Modal(outcome)),
             };
             tasks.push(outcome_task);
         }

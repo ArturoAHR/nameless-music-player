@@ -4,11 +4,13 @@ use tracing::{error, instrument, warn};
 use crate::{
     app::{App, Message, PlaybackOwner},
     error::AppError,
-    outcome::TagOutcome::SaveTags,
     playback::{controller::PlaybackControllerStatus, queue::entry::PlaybackQueueEntryId},
     tag::{
-        models::TagId,
-        repository::{delete_track_tag, insert_track_tag},
+        models::{TagGroupId, TagId},
+        repository::{
+            delete_track_tag, insert_tag, insert_tag_group, insert_track_tag, soft_delete_tag,
+            soft_delete_tag_group,
+        },
     },
     track::models::TrackId,
     ui::components::playback_bar::PlaybackBarStatus,
@@ -25,6 +27,7 @@ pub enum Outcome {
 pub enum ModalOutcome {
     CloseModal,
     OpenTagTracksModal(Vec<TrackId>),
+    OpenManageTagsModal,
 }
 
 #[derive(Debug, Clone)]
@@ -49,7 +52,10 @@ pub enum PlaybackOutcome {
 #[derive(Debug, Clone)]
 pub enum TagOutcome {
     ToggleTag(TrackId, TagId),
-    SaveTags,
+    AddNewTag(TagGroupId, String),
+    RemoveTag(TagId),
+    AddNewTagGroup(String),
+    RemoveTagGroup(TagGroupId),
 }
 
 impl App {
@@ -197,6 +203,9 @@ impl App {
                 self.modal_controller
                     .open_tag_tracks_modal(track_tagging_queue);
             }
+            ModalOutcome::OpenManageTagsModal => {
+                self.modal_controller.open_manage_tags_modal();
+            }
         }
 
         Ok(task)
@@ -226,8 +235,37 @@ impl App {
                     Message::ToggledTrackTag,
                 );
             }
-            SaveTags => {
-                warn!("Saving current track tag index is still not implemented");
+            TagOutcome::AddNewTag(tag_group_id, tag_name) => {
+                let pool = self.pool.clone();
+                task = Task::perform(
+                    async move { insert_tag(pool, tag_group_id, tag_name).await },
+                    Message::AddedTag,
+                )
+                .chain(Task::done(Message::LoadTagLibrary));
+            }
+            TagOutcome::AddNewTagGroup(tag_group_name) => {
+                let pool = self.pool.clone();
+                task = Task::perform(
+                    async move { insert_tag_group(pool, tag_group_name).await },
+                    Message::AddedTag,
+                )
+                .chain(Task::done(Message::LoadTagLibrary));
+            }
+            TagOutcome::RemoveTag(tag_id) => {
+                let pool = self.pool.clone();
+                task = Task::perform(
+                    async move { soft_delete_tag(pool, tag_id).await },
+                    Message::DeletedTag,
+                )
+                .chain(Task::done(Message::LoadTagLibrary));
+            }
+            TagOutcome::RemoveTagGroup(tag_group_id) => {
+                let pool = self.pool.clone();
+                task = Task::perform(
+                    async move { soft_delete_tag_group(pool, tag_group_id).await },
+                    Message::DeletedTagGroup,
+                )
+                .chain(Task::done(Message::LoadTagLibrary));
             }
         }
 

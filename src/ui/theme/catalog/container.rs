@@ -84,6 +84,17 @@ pub fn modal_header(theme: &Theme) -> Style {
     }
 }
 
+pub fn modal_footer(theme: &Theme) -> Style {
+    Style {
+        background: Some(theme.palette.surface_raised.into()),
+        border: Border {
+            radius: Radius::default().bottom(theme.sizes.border.radius_lg),
+            ..Border::default()
+        },
+        ..Style::default()
+    }
+}
+
 pub fn separator(theme: &Theme) -> Style {
     Style {
         background: Some(theme.palette.border.into()),

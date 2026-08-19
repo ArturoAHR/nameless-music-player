@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use iced_split::{horizontal_split, vertical_split};
+use itertools::Itertools;
 use rustc_hash::FxHashMap;
 use sqlx::SqlitePool;
 
@@ -106,10 +107,15 @@ pub enum Message {
     LoadTracks,
     LoadedTracks(Result<Vec<Track>, AppError>),
     LoadTagLibrary,
+    ReloadTagLibrary,
     LoadedTagLibrary(Result<TagLibrary, AppError>),
     ScanDirectory(Option<Vec<PathBuf>>),
     ScannedDirectory(Result<(), AppError>),
     ToggledTrackTag(Result<(), AppError>),
+    AddedTag(Result<(), AppError>),
+    DeletedTag(Result<(), AppError>),
+    InsertedTagGroup(Result<(), AppError>),
+    DeletedTagGroup(Result<(), AppError>),
 
     AudioPipelineEventChannelReady(
         iced::futures::channel::mpsc::UnboundedSender<AudioPipelineThreadEvent>,
@@ -228,14 +234,25 @@ impl App {
                 self.tracks = tracks.into_iter().map(|track| (track.id, track)).collect();
 
                 // TODO: Add loading state to main pane before setting the displayed tracks
-                self.displayed_track_ids = self.tracks.keys().copied().collect();
+                self.displayed_track_ids = self
+                    .tracks
+                    .iter()
+                    .sorted_by_cached_key(|(_track_id, track)| {
+                        (
+                            track.artist.as_deref().unwrap_or("Unknown").to_lowercase(),
+                            track.title.as_deref().unwrap_or("Untitled").to_lowercase(),
+                        )
+                    })
+                    .map(|(track_id, _track)| track_id)
+                    .copied()
+                    .collect();
 
                 // info!("Tracks loaded successfully");
             }
             Message::LoadedTracks(Err(error)) => {
                 error!("Failed to load tracks: {error}");
             }
-            Message::LoadTagLibrary => {
+            Message::LoadTagLibrary | Message::ReloadTagLibrary => {
                 let pool = self.pool.clone();
 
                 task = Task::perform(
@@ -258,6 +275,22 @@ impl App {
             }
             Message::LoadedTagLibrary(Err(error)) => {
                 error!("Failed to load tag library: {error}");
+            }
+            Message::AddedTag(Ok(()))
+            | Message::InsertedTagGroup(Ok(()))
+            | Message::DeletedTag(Ok(()))
+            | Message::DeletedTagGroup(Ok(())) => {}
+            Message::AddedTag(Err(error)) => {
+                error!("Failed to insert tag: {error}");
+            }
+            Message::DeletedTag(Err(error)) => {
+                error!("Failed to delete tag: {error}");
+            }
+            Message::InsertedTagGroup(Err(error)) => {
+                error!("Failed to insert tag group: {error}");
+            }
+            Message::DeletedTagGroup(Err(error)) => {
+                error!("Failed to delete tag: {error}");
             }
             Message::ScanDirectory(Some(directories)) => {
                 let pool = self.pool.clone();

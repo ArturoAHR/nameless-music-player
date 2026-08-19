@@ -5,9 +5,33 @@ use tracing::instrument;
 
 use crate::{
     error::AppError,
-    tag::models::{TagId, TrackTagIden},
+    tag::models::{TagGroupId, TagGroupIden, TagId, TagIden, TrackTagIden},
     track::models::TrackId,
 };
+
+#[instrument(skip(pool))]
+pub async fn delete_tag(pool: SqlitePool, tag_id: TagId) -> Result<(), AppError> {
+    let (sql, values) = Query::delete()
+        .from_table(TagIden::Table)
+        .and_where(Expr::col(TagIden::Id).eq(tag_id))
+        .build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[instrument(skip(pool))]
+pub async fn delete_tag_group(pool: SqlitePool, tag_group_id: TagGroupId) -> Result<(), AppError> {
+    let (sql, values) = Query::delete()
+        .from_table(TagGroupIden::Table)
+        .and_where(Expr::col(TagGroupIden::Id).eq(tag_group_id))
+        .build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
 
 #[instrument(skip(pool))]
 pub async fn delete_track_tag(

@@ -12,14 +12,18 @@ use crate::{
         models::{Tag, TagGroup},
     },
     track::models::{Track, TrackId},
-    ui::{modals::tag_tracks::TagTracksModal, theme::Theme},
+    ui::{
+        modals::{manage_tags::ManageTagsModal, tag_tracks::TagTracksModal},
+        theme::Theme,
+    },
 };
 
 pub mod handler;
+pub mod manage_tags;
 pub mod tag_tracks;
 
 pub enum AppModal {
-    ManageTags(()),
+    ManageTags(ManageTagsModal),
     TagTracks(TagTracksModal),
 }
 
@@ -35,7 +39,7 @@ pub enum Message {
     OpenManageTagsModal,
     OpenTagTracksModal(Vec<TrackId>),
     CloseModal,
-    // ManageTagsModal(manage_tags::Message)
+    ManageTagsModal(manage_tags::Message),
     TagTracksModal(tag_tracks::Message),
 }
 
@@ -64,7 +68,7 @@ impl ModalController {
 
         match message {
             Message::OpenManageTagsModal => {
-                self.current_modal = Some(AppModal::ManageTags(()));
+                self.open_manage_tags_modal();
             }
             Message::OpenTagTracksModal(track_tagging_queue) => {
                 self.open_tag_tracks_modal(track_tagging_queue);
@@ -84,9 +88,9 @@ impl ModalController {
                 );
             }
             Message::Keyboard(_) => {}
-            // Message::ManageTagsModal(message) => {
-            //     self.handle_manage_tags_modal(message);
-            // }
+            Message::ManageTagsModal(message) => {
+                (task, outcomes) = self.handle_manage_tags_modal(message, tags, tag_groups);
+            }
             Message::TagTracksModal(message) => {
                 (task, outcomes) = self.handle_tag_tracks_modal(
                     message,
@@ -110,12 +114,14 @@ impl ModalController {
         let mut task = Task::none();
 
         let Some(current_modal) = self.current_modal.as_mut() else {
-            return Task::none();
+            return task;
         };
 
         match current_modal {
-            AppModal::ManageTags(_manage_tags_modal) => {
-                // task = manage_tags_modal.on_event(event);
+            AppModal::ManageTags(manage_tags_modal) => {
+                task = manage_tags_modal
+                    .on_event(event)
+                    .map(Message::ManageTagsModal);
             }
             AppModal::TagTracks(tag_tracks_modal) => {
                 task = tag_tracks_modal
@@ -136,22 +142,18 @@ impl ModalController {
         tag_groups: &'a [TagGroup],
         track_tag_index: &'a TrackTagIndex,
     ) -> Option<Element<'a, Message, Theme, Renderer>> {
-        let mut modal = None;
-
         match self.current_modal.as_ref()? {
-            AppModal::ManageTags(_manage_tags_modal) => {
-                //modal = manage_tags_modal.view(theme)
-            }
-            AppModal::TagTracks(tag_tracks_modal) => {
-                modal = Some(
-                    tag_tracks_modal
-                        .view(theme, tracks, tags, tag_groups, track_tag_index)
-                        .map(Message::TagTracksModal),
-                );
-            }
+            AppModal::ManageTags(manage_tags_modal) => Some(
+                manage_tags_modal
+                    .view(theme, tags, tag_groups)
+                    .map(Message::ManageTagsModal),
+            ),
+            AppModal::TagTracks(tag_tracks_modal) => Some(
+                tag_tracks_modal
+                    .view(theme, tracks, tags, tag_groups, track_tag_index)
+                    .map(Message::TagTracksModal),
+            ),
         }
-
-        modal
     }
 
     pub fn close_modal(&mut self) -> Task<app::Message> {

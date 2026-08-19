@@ -7,8 +7,8 @@ use std::{
 };
 
 use cpal::{
-    BuildStreamError, DefaultStreamConfigError, PauseStreamError, PlayStreamError, SampleFormat,
-    Stream, default_host,
+    BufferSize, BuildStreamError, DefaultStreamConfigError, PauseStreamError, PlayStreamError,
+    SampleFormat, Stream, default_host,
     traits::{DeviceTrait, HostTrait},
 };
 use rtrb::{Consumer, PopError};
@@ -146,14 +146,20 @@ impl PlaybackEngine for AudioEngine {
         let device = host
             .default_output_device()
             .ok_or(PlaybackEngineError::OutputDeviceNotFound)?;
-        let config = device.default_output_config()?;
+        let supported_stream_config = device.default_output_config()?;
+        let mut stream_config = supported_stream_config.config();
 
-        let sample_rate = config.sample_rate();
-        let channels = config.channels();
+        #[cfg(target_os = "linux")]
+        {
+            stream_config.buffer_size = BufferSize::Fixed(2048);
+        }
+
+        let sample_rate = supported_stream_config.sample_rate();
+        let channels = supported_stream_config.channels();
 
         let build_arguments = AudioEngineStreamBuildArguments {
             sample_buffer_consumer,
-            config: config.clone().into(),
+            config: stream_config,
             device,
             samples_played,
             track_start_timestamp,
@@ -162,7 +168,7 @@ impl PlaybackEngine for AudioEngine {
             paused: Arc::clone(&self.paused),
         };
 
-        let stream = match config.sample_format() {
+        let stream = match supported_stream_config.sample_format() {
             SampleFormat::F32 => build_output_stream::<f32>(build_arguments)?,
             SampleFormat::I16 => build_output_stream::<i16>(build_arguments)?,
             SampleFormat::U16 => build_output_stream::<u16>(build_arguments)?,

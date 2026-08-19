@@ -273,5 +273,6 @@ pub fn footer<'a>(
         theme.sizes.space.xl,
         theme.sizes.space.xxxxl,
     ]))
+    .style(catalog::container::modal_footer)
     .into()
 }
