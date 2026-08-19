@@ -1,4 +1,4 @@
-use iced::{Size, Task, window};
+use iced::{Size, Task, keyboard, window};
 
 use crate::{
     app::{self, App},
@@ -7,6 +7,7 @@ use crate::{
             explorer_pane, main_pane, navigation_bar, playback_bar, queue_pane, status_bar,
             track_information_pane,
         },
+        modals,
         utils::pane::{are_pane_heights_valid, are_pane_widths_valid},
     },
 };
@@ -16,6 +17,7 @@ pub enum Message {
     SplitDragged(PaneSplit, f64),
     WindowResized(Option<window::Id>, Size),
     GetWindowId(window::Id),
+    Keyboard(keyboard::Event),
 
     NavigationBar(navigation_bar::Message),
     ExplorerPane(explorer_pane::Message),
@@ -24,6 +26,8 @@ pub enum Message {
     TrackInformationPane(track_information_pane::Message),
     StatusBar(status_bar::Message),
     PlaybackBar(playback_bar::Message),
+
+    Modal(modals::Message),
 }
 
 #[derive(Debug, Clone)]
@@ -89,6 +93,7 @@ impl App {
                 }
             }
             Message::GetWindowId(window_id) => self.main_window_id = Some(window_id),
+            Message::Keyboard(event) => task = self.handle_keyboard(event),
 
             Message::NavigationBar(message) => task = self.handle_navigation_bar(message),
             Message::ExplorerPane(message) => task = self.handle_explorer_pane(message),
@@ -99,8 +104,18 @@ impl App {
             }
             Message::StatusBar(message) => task = self.handle_status_bar(message),
             Message::PlaybackBar(message) => task = self.handle_playback_bar(message),
+
+            Message::Modal(message) => task = self.handle_modal(message),
         }
 
         task
+    }
+
+    pub fn handle_keyboard(&mut self, event: keyboard::Event) -> Task<app::Message> {
+        if self.modal_controller.is_modal_active() {
+            return self.handle_modal(modals::Message::Keyboard(event));
+        }
+
+        Task::none()
     }
 }

@@ -4,7 +4,10 @@ use iced::{
     widget::button::{Catalog, Status, Style},
 };
 
-use crate::ui::theme::{Theme, color::lighten};
+use crate::ui::theme::{
+    Theme,
+    color::{lighten, mix},
+};
 
 pub type StyleFn<'a> = Box<dyn Fn(&Theme, Status) -> Style + 'a>;
 
@@ -55,6 +58,103 @@ pub fn menu_option(theme: &Theme, status: Status) -> Style {
         text_color,
         border: Border {
             radius: Radius::from(theme.sizes.border.radius_sm),
+            ..Border::default()
+        },
+        ..Style::default()
+    }
+}
+
+pub fn toggle(theme: &Theme, status: Status) -> Style {
+    let background: Option<Background> = match status {
+        Status::Active | Status::Disabled => Some(theme.palette.surface.into()),
+        Status::Pressed => Some(lighten(theme.palette.hover, 0.1).into()),
+        Status::Hovered => Some(theme.palette.hover.into()),
+    };
+
+    let text_color = match status {
+        Status::Active | Status::Hovered | Status::Pressed => theme.palette.text,
+        Status::Disabled => theme.palette.text_muted,
+    };
+
+    Style {
+        background,
+        text_color,
+        border: Border {
+            radius: Radius::from(theme.sizes.border.radius_lg),
+            color: theme.palette.border,
+            width: 1.0,
+        },
+        ..Style::default()
+    }
+}
+
+pub fn active_toggle(theme: &Theme, status: Status) -> Style {
+    let base_color = mix(theme.palette.surface, theme.palette.accent, 0.1);
+
+    let background: Option<Background> = match status {
+        Status::Active | Status::Disabled => Some(base_color.into()),
+        Status::Pressed => Some(lighten(base_color, 0.2).into()),
+        Status::Hovered => Some(lighten(base_color, 0.1).into()),
+    };
+
+    let text_color = match status {
+        Status::Active | Status::Hovered | Status::Pressed => theme.palette.text_selected,
+        Status::Disabled => mix(theme.palette.text_selected, theme.palette.text_muted, 0.1),
+    };
+
+    Style {
+        background,
+        text_color,
+        border: Border {
+            radius: Radius::from(theme.sizes.border.radius_lg),
+            color: theme.palette.accent,
+            width: 1.0,
+        },
+        ..Style::default()
+    }
+}
+
+pub fn modal_footer_button(theme: &Theme, status: Status) -> Style {
+    let background: Option<Background> = match status {
+        Status::Active | Status::Disabled => Some(theme.palette.surface_raised.into()),
+        Status::Pressed => Some(lighten(theme.palette.hover, 0.1).into()),
+        Status::Hovered => Some(theme.palette.hover.into()),
+    };
+
+    let text_color = match status {
+        Status::Active | Status::Hovered | Status::Pressed => theme.palette.text,
+        Status::Disabled => theme.palette.text_muted,
+    };
+
+    Style {
+        background,
+        text_color,
+        border: Border {
+            radius: Radius::from(theme.sizes.border.radius_lg),
+            color: theme.palette.border,
+            width: 1.0,
+        },
+        ..Style::default()
+    }
+}
+
+pub fn clear_icon_button(theme: &Theme, status: Status) -> Style {
+    let background: Option<Background> = match status {
+        Status::Active | Status::Disabled => None,
+        Status::Pressed => Some(lighten(theme.palette.hover, 0.1).into()),
+        Status::Hovered => Some(theme.palette.hover.into()),
+    };
+
+    let text_color = match status {
+        Status::Active | Status::Hovered | Status::Pressed => theme.palette.text,
+        Status::Disabled => theme.palette.text_muted,
+    };
+
+    Style {
+        background,
+        text_color,
+        border: Border {
+            radius: Radius::from(theme.sizes.border.radius_round),
             ..Border::default()
         },
         ..Style::default()

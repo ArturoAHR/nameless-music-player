@@ -107,9 +107,9 @@ impl QueuePane {
                 None,
                 move |entry: &PlaybackQueueEntry| {
                     if entry.id == first_queue_entry_id {
-                        icon(icons::PLAY).into()
+                        Element::from(icon(icons::PLAY))
                     } else {
-                        Space::new().into()
+                        Element::from(Space::new())
                     }
                 },
             )

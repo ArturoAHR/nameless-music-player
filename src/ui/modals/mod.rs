@@ -1,0 +1,168 @@
+use iced::{Element, Renderer, Task, keyboard};
+use rustc_hash::FxHashMap;
+use tracing::instrument;
+
+use crate::{
+    app::{self, PlaybackOwner},
+    event::Event,
+    outcome::{ModalOutcome, PlaybackOutcome, TagOutcome},
+    playback::controller::PlaybackControllerStatus,
+    tag::{
+        index::TrackTagIndex,
+        models::{Tag, TagGroup},
+    },
+    track::models::{Track, TrackId},
+    ui::{modals::tag_tracks::TagTracksModal, theme::Theme},
+};
+
+pub mod handler;
+pub mod tag_tracks;
+
+pub enum AppModal {
+    ManageTags(()),
+    TagTracks(TagTracksModal),
+}
+
+#[derive(Default)]
+pub struct ModalController {
+    current_modal: Option<AppModal>,
+}
+
+#[derive(Debug, Clone)]
+pub enum Message {
+    Keyboard(keyboard::Event),
+
+    OpenManageTagsModal,
+    OpenTagTracksModal(Vec<TrackId>),
+    CloseModal,
+    // ManageTagsModal(manage_tags::Message)
+    TagTracksModal(tag_tracks::Message),
+}
+
+pub enum Outcome {
+    Playback(PlaybackOutcome),
+    Modal(ModalOutcome),
+    Tag(TagOutcome),
+}
+
+impl ModalController {
+    #[instrument(
+        skip(self, tracks, tags, tag_groups)
+        fields(tracks_len = tracks.len(), tags_len = tags.len(), tag_groups_len = tag_groups.len()),
+        level = "debug"
+    )]
+    pub fn update(
+        &mut self,
+        message: Message,
+        tracks: &FxHashMap<TrackId, Track>,
+        tags: &[Tag],
+        tag_groups: &[TagGroup],
+        playback_controller_status: &PlaybackControllerStatus,
+    ) -> (Task<Message>, Vec<Outcome>) {
+        let mut task = Task::none();
+        let mut outcomes = Vec::new();
+
+        match message {
+            Message::OpenManageTagsModal => {
+                self.current_modal = Some(AppModal::ManageTags(()));
+            }
+            Message::OpenTagTracksModal(track_tagging_queue) => {
+                self.open_tag_tracks_modal(track_tagging_queue);
+            }
+            Message::CloseModal => {
+                self.current_modal = None;
+            }
+            Message::Keyboard(event)
+                if let Some(AppModal::TagTracks(_)) = self.current_modal.as_ref() =>
+            {
+                (task, outcomes) = self.handle_tag_tracks_modal(
+                    tag_tracks::Message::Keyboard(event),
+                    tracks,
+                    tags,
+                    tag_groups,
+                    playback_controller_status,
+                );
+            }
+            Message::Keyboard(_) => {}
+            // Message::ManageTagsModal(message) => {
+            //     self.handle_manage_tags_modal(message);
+            // }
+            Message::TagTracksModal(message) => {
+                (task, outcomes) = self.handle_tag_tracks_modal(
+                    message,
+                    tracks,
+                    tags,
+                    tag_groups,
+                    playback_controller_status,
+                );
+            }
+        }
+
+        (task, outcomes)
+    }
+
+    #[instrument(skip(self), level = "debug")]
+    pub fn on_event(
+        &mut self,
+        event: &Event,
+        current_playback_owner: &PlaybackOwner,
+    ) -> Task<Message> {
+        let mut task = Task::none();
+
+        let Some(current_modal) = self.current_modal.as_mut() else {
+            return Task::none();
+        };
+
+        match current_modal {
+            AppModal::ManageTags(_manage_tags_modal) => {
+                // task = manage_tags_modal.on_event(event);
+            }
+            AppModal::TagTracks(tag_tracks_modal) => {
+                task = tag_tracks_modal
+                    .on_event(event, current_playback_owner)
+                    .map(Message::TagTracksModal);
+            }
+        }
+
+        task
+    }
+
+    #[instrument(skip_all, level = "debug")]
+    pub fn view<'a>(
+        &self,
+        theme: &Theme,
+        tracks: &'a FxHashMap<TrackId, Track>,
+        tags: &'a [Tag],
+        tag_groups: &'a [TagGroup],
+        track_tag_index: &'a TrackTagIndex,
+    ) -> Option<Element<'a, Message, Theme, Renderer>> {
+        let mut modal = None;
+
+        match self.current_modal.as_ref()? {
+            AppModal::ManageTags(_manage_tags_modal) => {
+                //modal = manage_tags_modal.view(theme)
+            }
+            AppModal::TagTracks(tag_tracks_modal) => {
+                modal = Some(
+                    tag_tracks_modal
+                        .view(theme, tracks, tags, tag_groups, track_tag_index)
+                        .map(Message::TagTracksModal),
+                );
+            }
+        }
+
+        modal
+    }
+
+    pub fn close_modal(&mut self) -> Task<app::Message> {
+        self.current_modal = None;
+
+        // TODO: Add saving current track tags index to the database on closing tag tracks modal.
+
+        Task::none()
+    }
+
+    pub fn is_modal_active(&self) -> bool {
+        self.current_modal.is_some()
+    }
+}

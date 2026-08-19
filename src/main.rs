@@ -41,7 +41,7 @@ fn main() -> iced::Result {
         move || {
             let playback_controller = PlaybackController::new(Box::new(AudioEngine::new()));
 
-            App::new(pool.clone(), Theme::default(), 1.0, playback_controller)
+            App::new(pool.clone(), Theme::default(), 1.00, playback_controller)
         },
         App::update,
         App::view,

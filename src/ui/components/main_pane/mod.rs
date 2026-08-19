@@ -9,7 +9,7 @@ use tracing::instrument;
 
 use crate::{
     event::Event,
-    outcome::PlaybackOutcome,
+    outcome::{ModalOutcome, PlaybackOutcome},
     track::models::{Track, TrackId},
     ui::{
         theme::{Theme, catalog},
@@ -35,6 +35,7 @@ pub enum Message {
     TrackRowSelected(FxHashSet<TrackId>),
     ColumnHeaderCellClicked(TrackTableColumn),
     QueueNext,
+    TagSelection,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -48,6 +49,7 @@ pub enum TrackTableColumn {
 #[derive(Debug, Clone)]
 pub enum Outcome {
     Playback(PlaybackOutcome),
+    Modal(ModalOutcome),
 }
 
 #[derive(Debug)]
@@ -84,6 +86,19 @@ impl MainPane {
                     )));
                 }
             }
+            Message::TagSelection => {
+                if !self.selected_track_ids.is_empty() {
+                    let track_tagging_queue = displayed_track_ids
+                        .iter()
+                        .filter(|track_id| self.selected_track_ids.contains(track_id))
+                        .copied()
+                        .collect();
+
+                    outcomes.push(Outcome::Modal(ModalOutcome::OpenTagTracksModal(
+                        track_tagging_queue,
+                    )));
+                }
+            }
         }
 
         (task, outcomes)
@@ -106,9 +121,9 @@ impl MainPane {
         let columns = vec![
             table::column(TrackTableColumn::NowPlaying, None, move |track: &Track| {
                 if track.id == current_playing_track_id {
-                    icon(icons::PLAY).into()
+                    Element::from(icon(icons::PLAY))
                 } else {
-                    Space::new().into()
+                    Element::from(Space::new())
                 }
             })
             .width(30.0),
@@ -166,7 +181,7 @@ impl MainPane {
                     container(
                         column![
                             menu_option("Queue Next", Some(Message::QueueNext)),
-                            menu_option("Tag Selection", None)
+                            menu_option("Tag Selection", Some(Message::TagSelection))
                         ]
                         .width(Length::Fill),
                     )

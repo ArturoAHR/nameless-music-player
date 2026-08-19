@@ -17,7 +17,7 @@ impl App {
                 &self.theme,
                 &self.tracks,
                 &self.displayed_track_ids,
-                self.current_playing_track_id.as_ref(),
+                self.playback_bar.current_playing_track_id.as_ref(),
             )
             .map(ui::Message::MainPane)
             .map(app::Message::Ui)
@@ -36,6 +36,7 @@ impl App {
         for outcome in outcomes {
             let outcome = match outcome {
                 Outcome::Playback(playback_outcome) => app::Outcome::Playback(playback_outcome),
+                Outcome::Modal(modal_outcome) => app::Outcome::Modal(modal_outcome),
             };
 
             let outcome_task = self.handle_outcome(outcome);

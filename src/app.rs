@@ -5,7 +5,7 @@ use rustc_hash::FxHashMap;
 use sqlx::SqlitePool;
 
 use iced::{
-    Element, Length, Size, Subscription, Task,
+    Element, Length, Size, Subscription, Task, keyboard,
     time::{every, milliseconds},
     widget::{column, container},
     window,
@@ -28,6 +28,7 @@ use crate::{
         audio_pipeline_thread_events::audio_pipeline_thread_events,
     },
     tag::{
+        index::TrackTagIndex,
         models::{Tag, TagGroup},
         repository::{TagLibrary, load_tag_library},
     },
@@ -43,7 +44,9 @@ use crate::{
             track_information_pane::TrackInformationPane,
         },
         handler::PaneSplit,
+        modals::ModalController,
         theme::Theme,
+        widgets::modal::modal_context,
     },
 };
 
@@ -58,6 +61,7 @@ pub struct App {
     pub tracks: FxHashMap<TrackId, Track>,
     pub tags: Vec<Tag>,
     pub tag_groups: Vec<TagGroup>,
+    pub track_tag_index: TrackTagIndex,
     pub displayed_track_ids: Vec<TrackId>,
     pub current_playing_track_id: Option<TrackId>,
 
@@ -67,7 +71,9 @@ pub struct App {
     pub pane_split_ratio: PaneSplitPositions,
 
     pub playback_controller: PlaybackController,
+    pub playback_generation_threshold: u64,
     pub playback_queue: PlaybackQueue,
+    pub current_playback_owner: PlaybackOwner,
 
     pub navigation_bar: NavigationBar,
     pub explorer_pane: ExplorerPane,
@@ -76,6 +82,8 @@ pub struct App {
     pub track_information_pane: TrackInformationPane,
     pub status_bar: StatusBar,
     pub playback_bar: PlaybackBar,
+
+    pub modal_controller: ModalController,
 }
 
 #[derive(Debug)]
@@ -87,6 +95,12 @@ pub enum AppStatus {
     FinishedAddingTracks,
 }
 
+#[derive(Debug)]
+pub enum PlaybackOwner {
+    PlaybackBar,
+    TagTrackModal,
+}
+
 #[derive(Debug, Clone)]
 pub enum Message {
     LoadTracks,
@@ -95,6 +109,7 @@ pub enum Message {
     LoadedTagLibrary(Result<TagLibrary, AppError>),
     ScanDirectory(Option<Vec<PathBuf>>),
     ScannedDirectory(Result<(), AppError>),
+    ToggledTrackTag(Result<(), AppError>),
 
     AudioPipelineEventChannelReady(
         iced::futures::channel::mpsc::UnboundedSender<AudioPipelineThreadEvent>,
@@ -131,6 +146,7 @@ impl App {
                 tracks: FxHashMap::default(),
                 tags: Vec::new(),
                 tag_groups: Vec::new(),
+                track_tag_index: TrackTagIndex::default(),
                 displayed_track_ids: Vec::new(),
                 current_playing_track_id: None,
 
@@ -144,7 +160,9 @@ impl App {
                 },
 
                 playback_controller,
+                playback_generation_threshold: 0,
                 playback_queue: PlaybackQueue::default(),
+                current_playback_owner: PlaybackOwner::PlaybackBar,
 
                 navigation_bar: NavigationBar {},
                 explorer_pane: ExplorerPane {},
@@ -153,6 +171,7 @@ impl App {
                 track_information_pane: TrackInformationPane {},
                 status_bar: StatusBar {},
                 playback_bar: PlaybackBar::new(),
+                modal_controller: ModalController::default(),
             },
             Task::batch([
                 Task::done(Message::LoadTracks),
@@ -190,8 +209,6 @@ impl App {
         let mut task = Task::none();
 
         match message {
-            Message::Ui(message) => task = self.handle_ui(message),
-
             Message::AudioPipelineEventChannelReady(audio_pipeline_event_sender) => {
                 match self
                     .playback_controller
@@ -213,7 +230,7 @@ impl App {
                 // TODO: Add loading state to main pane before setting the displayed tracks
                 self.displayed_track_ids = self.tracks.keys().copied().collect();
 
-                info!("Tracks loaded successfully");
+                // info!("Tracks loaded successfully");
             }
             Message::LoadedTracks(Err(error)) => {
                 error!("Failed to load tracks: {error}");
@@ -230,13 +247,14 @@ impl App {
                 let TagLibrary {
                     tags,
                     tag_groups,
-                    track_tags: _,
+                    track_tags,
                 } = tag_library;
 
                 self.tags = tags;
                 self.tag_groups = tag_groups;
+                self.track_tag_index = TrackTagIndex::new(track_tags);
 
-                info!("Tag library loaded successfully");
+                // info!("Tag library loaded successfully");
             }
             Message::LoadedTagLibrary(Err(error)) => {
                 error!("Failed to load tag library: {error}");
@@ -250,16 +268,27 @@ impl App {
                     Message::ScannedDirectory,
                 );
             }
-            Message::ScanDirectory(None) => {}
+            Message::ScanDirectory(None) => {
+                info!("Scan directory operation was cancelled");
+            }
             Message::ScannedDirectory(scan_result) => {
-                task = match scan_result {
-                    Ok(()) => Task::done(LoadTracks),
-                    Err(_) => Task::none(),
-                };
+                match scan_result {
+                    Ok(()) => task = Task::done(LoadTracks),
+                    Err(error) => {
+                        error!("Failed to scan directory: {error}");
+                    }
+                }
 
                 self.status = AppStatus::FinishedAddingTracks;
             }
+            Message::ToggledTrackTag(toggle_result) => match toggle_result {
+                Ok(()) => {}
+                Err(error) => {
+                    error!("Failed to toggle tag: {error}");
+                }
+            },
 
+            Message::Ui(message) => task = self.handle_ui(message),
             Message::PlaybackController(message) => task = self.handle_playback_controller(message),
         }
 
@@ -280,6 +309,8 @@ impl App {
         let status_bar = self.view_status_bar();
 
         let playback_bar = self.view_playback_bar();
+
+        let modal = self.view_modal();
 
         let queue_track_information_pane_split = horizontal_split(
             queue_pane,
@@ -320,23 +351,29 @@ impl App {
         )
         .handle_width(5.0);
 
-        column![
-            navigation_bar,
-            container(explorer_main_pane_split)
-                .height(Length::Fill)
-                .width(Length::Fill),
-            status_bar,
-            playback_bar
-        ]
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .into()
+        modal_context(
+            column![
+                navigation_bar,
+                container(explorer_main_pane_split)
+                    .height(Length::Fill)
+                    .width(Length::Fill),
+                status_bar,
+                playback_bar
+            ]
+            .width(Length::Fill)
+            .height(Length::Fill),
+            modal,
+        )
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
         let mut subscriptions = vec![
             Subscription::run(watch_default_device),
             Subscription::run(audio_pipeline_thread_events),
+            window::resize_events().map(|(window_id, size)| {
+                Message::Ui(ui::Message::WindowResized(Some(window_id), size))
+            }),
+            keyboard::listen().map(|event| Message::Ui(ui::Message::Keyboard(event))),
         ];
 
         if matches!(
@@ -351,10 +388,6 @@ impl App {
                 }),
             );
         }
-
-        subscriptions.push(window::resize_events().map(|(window_id, size)| {
-            Message::Ui(ui::Message::WindowResized(Some(window_id), size))
-        }));
 
         Subscription::batch(subscriptions)
     }

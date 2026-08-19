@@ -4,9 +4,10 @@ use iced::{
 };
 use iced_palace::widget::ellipsized_text;
 use rustc_hash::FxHashMap;
-use tracing::instrument;
+use tracing::{instrument, trace};
 
 use crate::{
+    app::PlaybackOwner,
     event::Event,
     outcome::PlaybackOutcome,
     playback::{
@@ -19,7 +20,7 @@ use crate::{
     },
     ui::{
         components::playback_bar::widgets::volume_bar,
-        theme::Theme,
+        theme::{Theme, catalog},
         utils::label::format_duration,
         widgets::icons::{self, icon},
     },
@@ -30,10 +31,10 @@ pub mod widgets;
 
 #[derive(Debug)]
 pub struct PlaybackBar {
-    current_position: f64,
-    pub current_position_generation_threshold: u64,
+    pub current_position: f64,
+    pub current_playing_track_id: Option<TrackId>,
 
-    status: PlaybackBarStatus,
+    pub status: PlaybackBarStatus,
 
     // TODO: These values must live in the app state, declaring them here for mocking UI.
     volume_percentage: u8,
@@ -54,7 +55,6 @@ pub enum Message {
     PlayPrevious,
     Scrubbed(f64),
     Seeked,
-    PlaybackProgressed(f64),
     ChangeVolumePercentage(u8),
     MutePlayback,
     CycleRepeatMode,
@@ -66,20 +66,8 @@ pub enum Outcome {
     Playback(PlaybackOutcome),
 }
 
-#[derive(Debug)]
-pub struct PlaybackBarUpdateContext<'a> {
-    pub playback_controller_status: &'a PlaybackControllerStatus,
-    pub playback_engine_generation: u64,
-}
-
-#[derive(Debug)]
-pub struct PlaybackBarEventContext {
-    pub playback_engine_generation: u64,
-}
-
 /*
  * TODO:
- * - Handle track label overflow.
  * - Fix icons with consistent design.
  */
 impl PlaybackBar {
@@ -87,7 +75,7 @@ impl PlaybackBar {
         Self {
             status: PlaybackBarStatus::Playing,
             current_position: 0.0,
-            current_position_generation_threshold: 0,
+            current_playing_track_id: None,
 
             muted: false,
             volume_percentage: 100,
@@ -97,28 +85,24 @@ impl PlaybackBar {
     #[instrument(skip(self), level = "debug")]
     pub fn update(
         &mut self,
-        event: Message,
-        ctx: PlaybackBarUpdateContext,
+        message: Message,
+        playback_controller_status: &PlaybackControllerStatus,
     ) -> (Task<Message>, Vec<Outcome>) {
         let task = Task::none();
         let mut outcomes = Vec::new();
 
-        match event {
+        match message {
             Message::Scrubbed(position) => {
                 self.current_position = position;
 
-                self.current_position_generation_threshold = ctx.playback_engine_generation;
-
                 if matches!(
-                    ctx.playback_controller_status,
+                    playback_controller_status,
                     PlaybackControllerStatus::Playing
                 ) {
                     outcomes.push(Outcome::Playback(PlaybackOutcome::Pause));
                 }
             }
-            Message::PlaybackProgressed(position) => {
-                self.current_position = position;
-            }
+
             Message::Seeked => {
                 let pre_seek_status = match self.status {
                     PlaybackBarStatus::Playing => PlaybackControllerStatus::Playing,
@@ -127,15 +111,15 @@ impl PlaybackBar {
 
                 outcomes.push(Outcome::Playback(PlaybackOutcome::Seek {
                     timestamp: self.current_position.round() as u64,
-                    post_seek_status: pre_seek_status,
+                    post_seek_status: Some(pre_seek_status),
                 }));
             }
-            Message::Resume => {
+            Message::Resume if self.current_playing_track_id.is_some() => {
                 self.status = PlaybackBarStatus::Playing;
 
                 outcomes.push(Outcome::Playback(PlaybackOutcome::Resume));
             }
-            Message::Pause => {
+            Message::Pause if self.current_playing_track_id.is_some() => {
                 self.status = PlaybackBarStatus::Paused;
 
                 outcomes.push(Outcome::Playback(PlaybackOutcome::Pause));
@@ -160,6 +144,8 @@ impl PlaybackBar {
             Message::CycleQueueOrder => {
                 outcomes.push(Outcome::Playback(PlaybackOutcome::CycleOrder));
             }
+
+            Message::Resume | Message::Pause => {}
         }
 
         (task, outcomes)
@@ -167,15 +153,30 @@ impl PlaybackBar {
 
     #[allow(clippy::single_match)]
     #[instrument(skip(self), level = "debug")]
-    pub fn on_event(&mut self, event: &Event, ctx: PlaybackBarEventContext) -> Task<Message> {
+    pub fn on_event(
+        &mut self,
+        event: &Event,
+        current_playback_owner: &PlaybackOwner,
+    ) -> Task<Message> {
         let task = Task::none();
+
+        if !matches!(current_playback_owner, PlaybackOwner::PlaybackBar) {
+            trace!("Playback Bar does not own the playback currently, ignoring event");
+
+            return task;
+        }
 
         match event {
             Event::AttemptedPlayingTrack => {
                 self.status = PlaybackBarStatus::Playing;
 
-                self.current_position_generation_threshold = ctx.playback_engine_generation;
                 self.current_position = 0.0;
+            }
+            Event::PlaybackProgressed(position) => {
+                self.current_position = *position;
+            }
+            Event::ActiveTrackChanged(track_id) => {
+                self.current_playing_track_id = *track_id;
             }
             _ => {}
         }
@@ -187,15 +188,15 @@ impl PlaybackBar {
         &'a self,
         theme: &Theme,
         tracks: &FxHashMap<TrackId, Track>,
-        current_playing_track_id: Option<&TrackId>,
         playback_queue: &PlaybackQueue,
     ) -> Element<'a, Message, Theme, Renderer> {
         let mut total_frames = 1.0;
         let mut current_position = 0.0;
 
         let mut track_name_label = String::new();
-        let (track_duration_timestamp, current_position_timestamp) = current_playing_track_id
-            .and_then(|track_id| tracks.get(track_id))
+        let (track_duration_timestamp, current_position_timestamp) = self
+            .current_playing_track_id
+            .and_then(|track_id| tracks.get(&track_id))
             .map_or_else(
                 || ("0:00".to_owned(), "0:00".to_owned()),
                 |track| {
@@ -224,12 +225,12 @@ impl PlaybackBar {
 
         let repeat_mode_icon = match playback_queue.repeat_mode {
             PlaybackRepeatMode::NoRepeat => icons::MENU, //Placeholder
-            PlaybackRepeatMode::Repeat => icons::LOOP_TRACKLIST,
+            PlaybackRepeatMode::Repeat => icons::REPEAT,
             PlaybackRepeatMode::RepeatOne => icons::PLAY, //Placeholder
         };
 
         let queue_order_icon = match playback_queue.order {
-            PlaybackQueueOrder::Sequential => icons::NO_SHUFFLE,
+            PlaybackQueueOrder::Sequential => icons::SEQUENTIAL,
             PlaybackQueueOrder::Shuffle => icons::SHUFFLE,
         };
 
@@ -251,16 +252,13 @@ impl PlaybackBar {
                 button(icon(queue_order_icon)).on_press(Message::CycleQueueOrder),
             ]
             .align_y(Alignment::Center)
-            .spacing(theme.sizes.space.xxl),
+            .spacing(theme.sizes.space.xxxl),
         )
         .height(Length::Fixed(theme.sizes.component.playback_bar_height))
         .width(Length::Fill)
         .align_y(Alignment::Center)
         .padding(Padding::from(theme.sizes.space.xl))
-        .style(|theme: &Theme| container::Style {
-            background: Some(theme.palette.surface_raised.into()),
-            ..container::Style::default()
-        })
+        .style(catalog::container::background_surface_raised)
         .into()
     }
 }

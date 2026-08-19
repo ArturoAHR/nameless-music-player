@@ -14,8 +14,8 @@ impl App {
             .map(app::Message::Ui)
     }
 
-    pub fn handle_track_information_pane(&mut self, event: Message) -> Task<app::Message> {
-        let (task, _outcomes) = self.track_information_pane.update(event);
+    pub fn handle_track_information_pane(&mut self, message: Message) -> Task<app::Message> {
+        let (task, _outcomes) = self.track_information_pane.update(message);
         let component_task = task
             .map(ui::Message::TrackInformationPane)
             .map(app::Message::Ui);

@@ -2,13 +2,15 @@ use iced::Task;
 
 use crate::{
     app::{App, Message},
-    track::models::Track,
+    track::models::TrackId,
 };
 
 #[derive(Debug, Clone)]
 pub enum Event {
     AttemptedPlayingTrack,
-    ActiveTrackChanged(Box<Option<Track>>),
+    AttemptedPlayingTrackAtDuration(u64),
+    ActiveTrackChanged(Option<TrackId>),
+    PlaybackProgressed(f64),
     StartedPlayback,
     StoppedPlayback,
     EndOfTrack,
@@ -25,6 +27,7 @@ impl App {
             self.notify_queue_pane(&event),
             self.notify_status_bar(&event),
             self.notify_track_information_pane(&event),
+            self.notify_modal(&event),
         ])
     }
 }
