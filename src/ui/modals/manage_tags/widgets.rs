@@ -66,11 +66,19 @@ pub fn tag_group_list<'a>(
     let tag_group_list_elements: Vec<Element<'a, Message, Theme, Renderer>> = tag_groups
         .iter()
         .map(|tag_group| {
-            button(ellipsized_text(&tag_group.name))
-                .width(Length::Fill)
-                .padding(Padding::from(theme.sizes.space.lg))
-                .on_press(Message::SelectTagGroup(tag_group.id))
-                .into()
+            button(row![
+                ellipsized_text(&tag_group.name),
+                Space::new().width(Length::Fill),
+                button(icon(icons::CLOSE).size(theme.sizes.font.caption))
+                    .on_press(Message::RemoveTagGroup(tag_group.id))
+                    .padding(Padding::from([theme.sizes.space.sm, theme.sizes.space.md]))
+                    .style(catalog::button::clear_icon_button)
+            ])
+            .width(Length::Fill)
+            .padding(Padding::from(theme.sizes.space.lg))
+            .on_press(Message::SelectTagGroup(tag_group.id))
+            .style(catalog::button::menu_option)
+            .into()
         })
         .collect();
 
@@ -147,7 +155,20 @@ pub fn tag_group_tags_list<'a>(
     tag_group_tags: impl Iterator<Item = &'a Tag>,
 ) -> Element<'a, Message, Theme, Renderer> {
     let tag_group_tags_elements: Vec<Element<'a, Message, Theme, Renderer>> = tag_group_tags
-        .map(|tag| button(text(&tag.name)).into())
+        .map(|tag| {
+            button(
+                row![
+                    text(&tag.name),
+                    button(icon(icons::CLOSE).size(theme.sizes.font.caption))
+                        .on_press(Message::RemoveTag(tag.id))
+                        .padding(Padding::from([theme.sizes.space.sm, theme.sizes.space.md]))
+                        .style(catalog::button::clear_icon_button)
+                ]
+                .spacing(theme.sizes.space.md),
+            )
+            .padding(Padding::from(theme.sizes.space.md))
+            .into()
+        })
         .collect();
 
     let list_title = &tag_group.name;

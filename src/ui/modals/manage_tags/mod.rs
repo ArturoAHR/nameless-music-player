@@ -7,7 +7,7 @@ use tracing::instrument;
 use crate::{
     event::Event,
     outcome::{ModalOutcome, TagOutcome},
-    tag::models::{Tag, TagGroup, TagGroupId},
+    tag::models::{Tag, TagGroup, TagGroupId, TagId},
     ui::{
         modals::manage_tags::widgets::{footer, header, tag_group_pane, tag_group_tags_pane},
         theme::{Theme, catalog},
@@ -31,8 +31,10 @@ pub enum Message {
     SelectTagGroup(TagGroupId),
     NewTagGroupNameInputTextChanged(String),
     AddNewTagGroup,
+    RemoveTagGroup(TagGroupId),
     NewTagNameInputTextChanged(String),
     AddNewTag,
+    RemoveTag(TagId),
 }
 
 pub enum Outcome {
@@ -91,6 +93,13 @@ impl ManageTagsModal {
             }
             Message::AddNewTag => {
                 // Not reachable
+            }
+
+            Message::RemoveTagGroup(tag_group_id) => {
+                outcomes.push(Outcome::Tag(TagOutcome::RemoveTagGroup(tag_group_id)));
+            }
+            Message::RemoveTag(tag_id) => {
+                outcomes.push(Outcome::Tag(TagOutcome::RemoveTag(tag_id)));
             }
         }
 

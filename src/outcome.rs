@@ -8,8 +8,8 @@ use crate::{
     tag::{
         models::{TagGroupId, TagId},
         repository::{
-            delete_tag, delete_tag_group, delete_track_tag, insert_tag, insert_tag_group,
-            insert_track_tag,
+            delete_track_tag, insert_tag, insert_tag_group, insert_track_tag, soft_delete_tag,
+            soft_delete_tag_group,
         },
     },
     track::models::TrackId,
@@ -53,9 +53,9 @@ pub enum PlaybackOutcome {
 pub enum TagOutcome {
     ToggleTag(TrackId, TagId),
     AddNewTag(TagGroupId, String),
-    DeleteTag(TagId),
+    RemoveTag(TagId),
     AddNewTagGroup(String),
-    DeleteTagGroup(TagGroupId),
+    RemoveTagGroup(TagGroupId),
 }
 
 impl App {
@@ -251,18 +251,18 @@ impl App {
                 )
                 .chain(Task::done(Message::LoadTagLibrary));
             }
-            TagOutcome::DeleteTag(tag_id) => {
+            TagOutcome::RemoveTag(tag_id) => {
                 let pool = self.pool.clone();
                 task = Task::perform(
-                    async move { delete_tag(pool, tag_id).await },
+                    async move { soft_delete_tag(pool, tag_id).await },
                     Message::DeletedTag,
                 )
                 .chain(Task::done(Message::LoadTagLibrary));
             }
-            TagOutcome::DeleteTagGroup(tag_group_id) => {
+            TagOutcome::RemoveTagGroup(tag_group_id) => {
                 let pool = self.pool.clone();
                 task = Task::perform(
-                    async move { delete_tag_group(pool, tag_group_id).await },
+                    async move { soft_delete_tag_group(pool, tag_group_id).await },
                     Message::DeletedTagGroup,
                 )
                 .chain(Task::done(Message::LoadTagLibrary));
