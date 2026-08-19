@@ -1,4 +1,4 @@
-use sea_query::{Asterisk, Expr, ExprTrait, Query, SqliteQueryBuilder};
+use sea_query::{Asterisk, Expr, ExprTrait, JoinType, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
 use tracing::instrument;
@@ -11,9 +11,16 @@ use crate::{
 #[instrument(skip(pool))]
 pub async fn get_tags(pool: SqlitePool) -> Result<Vec<Tag>, AppError> {
     let (sql, values) = Query::select()
-        .column(Asterisk)
+        .column((TagIden::Table, Asterisk))
         .from(TagIden::Table)
-        .and_where(Expr::col(TagIden::DeletedAt).is_null())
+        .join(
+            JoinType::RightJoin,
+            TagGroupIden::Table,
+            Expr::col((TagIden::Table, TagIden::TagGroupId))
+                .equals((TagGroupIden::Table, TagGroupIden::Id)),
+        )
+        .and_where(Expr::col((TagIden::Table, TagIden::DeletedAt)).is_null())
+        .and_where(Expr::col((TagGroupIden::Table, TagGroupIden::DeletedAt)).is_null())
         .build_sqlx(SqliteQueryBuilder);
 
     let tags = sqlx::query_as_with::<_, Tag, _>(&sql, values)

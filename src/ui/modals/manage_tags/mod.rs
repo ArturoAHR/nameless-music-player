@@ -99,9 +99,7 @@ impl ManageTagsModal {
 
     #[instrument(skip(self), level = "debug")]
     pub fn on_event(&mut self, event: &Event) -> Task<Message> {
-        let task = Task::none();
-
-        task
+        Task::none()
     }
 
     #[instrument(skip_all, level = "debug")]
