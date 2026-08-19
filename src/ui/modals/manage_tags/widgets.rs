@@ -67,8 +67,9 @@ pub fn tag_group_list<'a>(
         .iter()
         .map(|tag_group| {
             button(row![
-                ellipsized_text(&tag_group.name),
-                Space::new().width(Length::Fill),
+                ellipsized_text(&tag_group.name)
+                    .wrapping(text::Wrapping::None)
+                    .width(Length::Fill),
                 button(icon(icons::CLOSE).size(theme.sizes.font.caption))
                     .on_press(Message::RemoveTagGroup(tag_group.id))
                     .padding(Padding::from([theme.sizes.space.sm, theme.sizes.space.md]))
@@ -158,7 +159,8 @@ pub fn tag_group_tags_list<'a>(
         .map(|tag| {
             button(
                 row![
-                    text(&tag.name),
+                    container(ellipsized_text(&tag.name).wrapping(text::Wrapping::None))
+                        .max_width(500),
                     button(icon(icons::CLOSE).size(theme.sizes.font.caption))
                         .on_press(Message::RemoveTag(tag.id))
                         .padding(Padding::from([theme.sizes.space.sm, theme.sizes.space.md]))
@@ -182,9 +184,11 @@ pub fn tag_group_tags_list<'a>(
                 .color(theme.palette.text_muted)
         ]
         .spacing(theme.sizes.space.md),
-        row(tag_group_tags_elements)
-            .spacing(theme.sizes.space.md)
-            .wrap()
+        scrollable(
+            row(tag_group_tags_elements)
+                .spacing(theme.sizes.space.md)
+                .wrap()
+        )
     ]
     .spacing(theme.sizes.space.lg)
     .height(Length::Fill)
