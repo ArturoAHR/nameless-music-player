@@ -24,6 +24,10 @@ pub const ARROW_LEFT: char = '\u{EF177}';
 pub const ARROW_RIGHT: char = '\u{EF178}';
 pub const CHEVRON_LEFT: char = '\u{E80C}';
 pub const CHEVRON_RIGHT: char = '\u{E80D}';
+pub const CHEVRON_UP: char = '\u{E000}';
+pub const CHEVRON_DOWN: char = '\u{E000}';
+pub const TAG: char = '\u{E000}';
+pub const MUSICAL_NOTE: char = '\u{E000}';
 
 pub fn icon<'a>(codepoint: char) -> Text<'a, Theme, Renderer> {
     const ICON_FONT: Font = Font::with_name("music-player-icons");

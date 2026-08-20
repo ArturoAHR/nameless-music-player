@@ -1,3 +1,7 @@
+## Components
+
+- Add trait for Components that implements Component Context View/Event/Update struct pattern with associated types.
+
 ## Custom Table Widget
 
 - Add click event reporting with `TableArea` to determine what `ContextMenu` component should render on right click.

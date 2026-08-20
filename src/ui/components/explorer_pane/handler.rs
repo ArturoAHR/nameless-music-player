@@ -9,7 +9,7 @@ use crate::{
 impl App {
     pub fn view_explorer_pane(&self) -> Element<'_, app::Message, Theme, Renderer> {
         self.explorer_pane
-            .view(&self.theme)
+            .view(&self.theme, &self.tags, &self.tag_groups)
             .map(ui::Message::ExplorerPane)
             .map(app::Message::Ui)
     }
