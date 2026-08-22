@@ -43,6 +43,14 @@ where
         let grid_limits = limits.width(limits.max().width - self.scroll_width);
         let state = tree.state.downcast_mut::<State<T::Identifier, ColumnId>>();
 
+        // Clamp scroll offset in case the table record count has been reduced.
+        state.offset_y = state.offset_y.clamp(
+            0.0,
+            (self.row_height * self.records.len() as f32
+                - (grid_limits.max().height - self.header_height))
+                .max(0.0),
+        );
+
         // Children Cell Generation
 
         let mut visible_row_range = get_visible_range(
