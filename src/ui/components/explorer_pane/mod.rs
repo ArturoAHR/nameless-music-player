@@ -1,6 +1,6 @@
 use iced::{
     Element, Length, Renderer, Task,
-    widget::{column, container, scrollable},
+    widget::{Space, column, container, scrollable},
 };
 use rustc_hash::FxHashSet;
 use tracing::instrument;
@@ -113,6 +113,8 @@ impl ExplorerPane {
                     )
                 }),
         );
+
+        pane_elements.extend([Space::new().height(theme.sizes.space.lg).into()]);
 
         container(scrollable(column(pane_elements)))
             .height(Length::Fill)
