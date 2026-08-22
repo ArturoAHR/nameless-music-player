@@ -39,7 +39,7 @@ pub fn library_label<'a>(theme: &Theme) -> Element<'a, Message, Theme, Renderer>
             .color(theme.palette.text_muted),
     )
     .width(Length::Fill)
-    .padding(Padding::from([theme.sizes.space.xxl, theme.sizes.space.xl]).bottom(10))
+    .padding(Padding::from(theme.sizes.space.xl).bottom(10))
     .into()
 }
 
@@ -119,9 +119,7 @@ pub fn tag_group_dropdown_controller<'a>(
         .spacing(theme.sizes.space.lg),
     )
     .width(Length::Fill)
-    .padding(
-        Padding::from([theme.sizes.space.xxl, theme.sizes.space.xl]).bottom(theme.sizes.space.sm),
-    )
+    .padding(Padding::from(theme.sizes.space.xl).bottom(theme.sizes.space.sm))
     .on_press_maybe(on_press)
     .style(catalog::button::explorer_pane_dropdown_controller)
     .into()
