@@ -3,7 +3,7 @@ use itertools::Itertools;
 use tracing::{error, instrument, warn};
 
 use crate::{
-    app::{App, Message, PlaybackOwner},
+    app::{App, Message, PlaybackOwner, TrackList},
     error::AppError,
     playback::{controller::PlaybackControllerStatus, queue::entry::PlaybackQueueEntryId},
     tag::{
@@ -285,6 +285,8 @@ impl App {
 
         match outcome {
             TrackListOutcome::DisplayMainLibraryTrackList => {
+                self.track_list = TrackList::MainLibrary;
+
                 self.displayed_track_ids = self
                     .tracks
                     .iter()
@@ -299,8 +301,7 @@ impl App {
                     .collect();
             }
             TrackListOutcome::DisplayTagTrackList(tag_id) => {
-                dbg!(self.track_tag_index.get_tag_tracks(tag_id));
-                dbg!(tag_id);
+                self.track_list = TrackList::Tag(tag_id);
 
                 if let Some(tag_track_ids) = self.track_tag_index.get_tag_tracks(tag_id) {
                     self.displayed_track_ids = tag_track_ids.iter().copied().collect();

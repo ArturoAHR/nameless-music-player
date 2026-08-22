@@ -1,7 +1,8 @@
 use iced::{
-    Element, Length, Renderer, Task,
-    widget::{button, column, container, row, scrollable, text},
+    Element, Length, Padding, Renderer, Task, alignment,
+    widget::{Space, button, column, container, row, scrollable, text},
 };
+use iced_palace::widget::ellipsized_text;
 use rustc_hash::FxHashSet;
 use tracing::instrument;
 
@@ -73,15 +74,36 @@ impl ExplorerPane {
 
     pub fn view<'a>(
         &'a self,
-        _theme: &Theme,
+        theme: &Theme,
         tags: &'a [Tag],
         tag_groups: &'a [TagGroup],
     ) -> Element<'a, Message, Theme, Renderer> {
         let mut pane_elements: Vec<Element<'a, Message, Theme, Renderer>> = vec![
-            container(text("Library")).into(),
-            button(row![icon(icons::MUSICAL_NOTE), text("Music")])
-                .on_press(Message::SelectedMainLibrary)
-                .into(),
+            container(
+                text("LIBRARY")
+                    .size(theme.sizes.font.body)
+                    .color(theme.palette.text_muted),
+            )
+            .width(Length::Fill)
+            .padding(Padding::from([theme.sizes.space.xxl, theme.sizes.space.xl]).bottom(10))
+            .into(),
+            button(
+                row![
+                    icon(icons::MUSICAL_NOTE)
+                        .size(theme.sizes.font.body)
+                        .height(16)
+                        .align_y(alignment::Vertical::Top),
+                    ellipsized_text("Music")
+                ]
+                .align_y(alignment::Vertical::Center)
+                .spacing(theme.sizes.space.lg),
+            )
+            .on_press(Message::SelectedMainLibrary)
+            .height(36)
+            .width(Length::Fill)
+            .padding([theme.sizes.space.md, theme.sizes.space.xl])
+            .into(),
+            Space::new().height(6).into(),
             vertical_separator(),
         ];
 
@@ -101,18 +123,59 @@ impl ExplorerPane {
             tag_groups_with_tags
                 .iter()
                 .map(|(tag_group, tag_group_tags)| {
+                    let is_tag_group_expanded = self.tag_groups_expanded.contains(&tag_group.id);
+
+                    let chevron = if is_tag_group_expanded {
+                        icons::CHEVRON_DOWN
+                    } else {
+                        icons::CHEVRON_UP
+                    };
+
                     let mut dropdown_elements: Vec<Element<'a, Message, Theme, Renderer>> = vec![
-                        button(row![icon(icons::CHEVRON_DOWN), text(&tag_group.name)])
-                            .on_press(Message::ToggleTagGroup(tag_group.id))
-                            .into(),
+                        button(
+                            row![
+                                icon(chevron)
+                                    .size(theme.sizes.font.caption)
+                                    .color(theme.palette.text_muted),
+                                ellipsized_text(tag_group.name.to_uppercase())
+                                    .size(theme.sizes.font.body)
+                                    .color(theme.palette.text_muted)
+                            ]
+                            .width(Length::Fill)
+                            .align_y(alignment::Vertical::Center)
+                            .spacing(theme.sizes.space.lg),
+                        )
+                        .width(Length::Fill)
+                        .padding(
+                            Padding::from([theme.sizes.space.xxl, theme.sizes.space.xl])
+                                .bottom(theme.sizes.space.sm),
+                        )
+                        .on_press(Message::ToggleTagGroup(tag_group.id))
+                        .into(),
                     ];
 
-                    // Add check to conditionally add tags below.
-                    if self.tag_groups_expanded.contains(&tag_group.id) {
+                    if is_tag_group_expanded {
                         dropdown_elements.extend(tag_group_tags.iter().map(|tag_group_tag| {
-                            button(row![icon(icons::TAG), text(&tag_group_tag.name)])
-                                .on_press(Message::SelectedTag(tag_group_tag.id))
-                                .into()
+                            button(
+                                row![
+                                    icon(icons::TAG)
+                                        .size(theme.sizes.font.body)
+                                        .height(16)
+                                        .align_y(alignment::Vertical::Top),
+                                    ellipsized_text(&tag_group_tag.name)
+                                ]
+                                .width(Length::Fill)
+                                .align_y(alignment::Vertical::Center)
+                                .spacing(theme.sizes.space.lg),
+                            )
+                            .height(36)
+                            .width(Length::Fill)
+                            .padding(
+                                Padding::from([theme.sizes.space.md, 52.0])
+                                    .right(theme.sizes.space.sm),
+                            )
+                            .on_press(Message::SelectedTag(tag_group_tag.id))
+                            .into()
                         }));
                     }
 

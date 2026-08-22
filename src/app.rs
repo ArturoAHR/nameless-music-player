@@ -30,7 +30,7 @@ use crate::{
     },
     tag::{
         index::TrackTagIndex,
-        models::{Tag, TagGroup},
+        models::{Tag, TagGroup, TagId},
         repository::{TagLibrary, load_tag_library},
     },
     track::{
@@ -106,7 +106,7 @@ pub enum PlaybackOwner {
 #[derive(Debug)]
 pub enum TrackList {
     MainLibrary,
-    Tag,
+    Tag(TagId),
     AdvancedSearch,
 }
 
