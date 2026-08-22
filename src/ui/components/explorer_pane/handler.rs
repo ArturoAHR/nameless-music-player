@@ -3,7 +3,11 @@ use iced::{Element, Renderer, Task};
 use crate::{
     app::{self, App},
     event::Event,
-    ui::{self, components::explorer_pane::Message, theme::Theme},
+    ui::{
+        self,
+        components::explorer_pane::{Message, Outcome},
+        theme::Theme,
+    },
 };
 
 impl App {
@@ -15,24 +19,26 @@ impl App {
     }
 
     pub fn handle_explorer_pane(&mut self, message: Message) -> Task<app::Message> {
-        let (task, _outcomes) = self.explorer_pane.update(message);
+        let (task, outcomes) = self.explorer_pane.update(message);
         let component_task = task.map(ui::Message::ExplorerPane).map(app::Message::Ui);
 
-        // if outcomes.len() == 0 {
-        component_task
-        // };
+        if outcomes.is_empty() {
+            return component_task;
+        }
 
-        // let mut tasks = vec![component_task];
+        let mut tasks = vec![component_task];
 
-        // for outcome in outcomes {
-        //     let outcome = match outcome {};
+        for outcome in outcomes {
+            let outcome = match outcome {
+                Outcome::TrackList(outcome) => app::Outcome::TrackList(outcome),
+            };
 
-        //     let outcome_task = self.handle_outcome(outcome);
+            let outcome_task = self.handle_outcome(outcome);
 
-        //     tasks.push(outcome_task);
-        // }
+            tasks.push(outcome_task);
+        }
 
-        // Task::batch(tasks)
+        Task::batch(tasks)
     }
 
     pub fn notify_explorer_pane(&mut self, event: &Event) -> Task<app::Message> {

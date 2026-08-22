@@ -180,7 +180,7 @@ impl App {
                 playback_owner: PlaybackOwner::PlaybackBar,
 
                 navigation_bar: NavigationBar {},
-                explorer_pane: ExplorerPane {},
+                explorer_pane: ExplorerPane::default(),
                 main_pane: MainPane::default(),
                 queue_pane: QueuePane::default(),
                 track_information_pane: TrackInformationPane {},

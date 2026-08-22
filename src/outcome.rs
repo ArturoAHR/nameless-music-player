@@ -1,4 +1,5 @@
 use iced::Task;
+use itertools::Itertools;
 use tracing::{error, instrument, warn};
 
 use crate::{
@@ -21,6 +22,7 @@ pub enum Outcome {
     Playback(PlaybackOutcome),
     Modal(ModalOutcome),
     Tag(TagOutcome),
+    TrackList(TrackListOutcome),
 }
 
 #[derive(Debug, Clone)]
@@ -58,12 +60,21 @@ pub enum TagOutcome {
     RemoveTagGroup(TagGroupId),
 }
 
+#[derive(Debug, Clone)]
+pub enum TrackListOutcome {
+    DisplayMainLibraryTrackList,
+    DisplayTagTrackList(TagId),
+    // Search(criteria)
+    // AdvancedSearch(criteria)
+}
+
 impl App {
     pub fn handle_outcome(&mut self, outcome: Outcome) -> Task<Message> {
         let outcome_task = match outcome {
             Outcome::Playback(outcome) => self.handle_playback_outcome(outcome),
             Outcome::Modal(outcome) => self.handle_modal_outcome(outcome),
             Outcome::Tag(outcome) => self.handle_tag_outcome(outcome),
+            Outcome::TrackList(outcome) => self.handle_track_list_outcome(outcome),
         };
 
         match outcome_task {
@@ -155,10 +166,7 @@ impl App {
     }
 
     #[instrument(skip(self))]
-    pub fn handle_modal_outcome(
-        &mut self,
-        outcome: ModalOutcome,
-    ) -> Result<Task<Message>, AppError> {
+    fn handle_modal_outcome(&mut self, outcome: ModalOutcome) -> Result<Task<Message>, AppError> {
         let mut task = Task::none();
 
         match outcome {
@@ -210,10 +218,8 @@ impl App {
     }
 
     #[instrument(skip(self))]
-    pub fn handle_tag_outcome(&mut self, outcome: TagOutcome) -> Result<Task<Message>, AppError> {
-        let mut task = Task::none();
-
-        match outcome {
+    fn handle_tag_outcome(&mut self, outcome: TagOutcome) -> Result<Task<Message>, AppError> {
+        let task = match outcome {
             TagOutcome::ToggleTag(track_id, tag_id) => {
                 let tag_track_exists = self.track_tag_index.exists(track_id, tag_id);
 
@@ -222,7 +228,7 @@ impl App {
                 // Instead of toggling at the database level we explicitly either delete or insert
                 // to ensure consistency with the in memory track tag index
                 let pool = self.pool.clone();
-                task = Task::perform(
+                Task::perform(
                     async move {
                         if tag_track_exists {
                             delete_track_tag(pool, track_id, tag_id).await
@@ -231,39 +237,74 @@ impl App {
                         }
                     },
                     Message::ToggledTrackTag,
-                );
+                )
             }
             TagOutcome::AddNewTag(tag_group_id, tag_name) => {
                 let pool = self.pool.clone();
-                task = Task::perform(
+                Task::perform(
                     async move { insert_tag(pool, tag_group_id, tag_name).await },
                     Message::AddedTag,
                 )
-                .chain(Task::done(Message::LoadTagLibrary));
+                .chain(Task::done(Message::LoadTagLibrary))
             }
             TagOutcome::AddNewTagGroup(tag_group_name) => {
                 let pool = self.pool.clone();
-                task = Task::perform(
+                Task::perform(
                     async move { insert_tag_group(pool, tag_group_name).await },
                     Message::AddedTag,
                 )
-                .chain(Task::done(Message::LoadTagLibrary));
+                .chain(Task::done(Message::LoadTagLibrary))
             }
             TagOutcome::RemoveTag(tag_id) => {
                 let pool = self.pool.clone();
-                task = Task::perform(
+                Task::perform(
                     async move { soft_delete_tag(pool, tag_id).await },
                     Message::DeletedTag,
                 )
-                .chain(Task::done(Message::LoadTagLibrary));
+                .chain(Task::done(Message::LoadTagLibrary))
             }
             TagOutcome::RemoveTagGroup(tag_group_id) => {
                 let pool = self.pool.clone();
-                task = Task::perform(
+                Task::perform(
                     async move { soft_delete_tag_group(pool, tag_group_id).await },
                     Message::DeletedTagGroup,
                 )
-                .chain(Task::done(Message::LoadTagLibrary));
+                .chain(Task::done(Message::LoadTagLibrary))
+            }
+        };
+
+        Ok(task)
+    }
+
+    #[instrument(skip(self))]
+    pub fn handle_track_list_outcome(
+        &mut self,
+        outcome: TrackListOutcome,
+    ) -> Result<Task<Message>, AppError> {
+        let task = Task::none();
+
+        match outcome {
+            TrackListOutcome::DisplayMainLibraryTrackList => {
+                self.displayed_track_ids = self
+                    .tracks
+                    .iter()
+                    .sorted_by_cached_key(|(_track_id, track)| {
+                        (
+                            track.artist.as_deref().unwrap_or("Unknown").to_lowercase(),
+                            track.title.as_deref().unwrap_or("Untitled").to_lowercase(),
+                        )
+                    })
+                    .map(|(track_id, _track)| track_id)
+                    .copied()
+                    .collect();
+            }
+            TrackListOutcome::DisplayTagTrackList(tag_id) => {
+                dbg!(self.track_tag_index.get_tag_tracks(tag_id));
+                dbg!(tag_id);
+
+                if let Some(tag_track_ids) = self.track_tag_index.get_tag_tracks(tag_id) {
+                    self.displayed_track_ids = tag_track_ids.iter().copied().collect();
+                }
             }
         }
 

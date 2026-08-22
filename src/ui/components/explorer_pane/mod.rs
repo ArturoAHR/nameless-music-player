@@ -2,11 +2,13 @@ use iced::{
     Element, Length, Renderer, Task,
     widget::{button, column, container, row, scrollable, text},
 };
+use rustc_hash::FxHashSet;
 use tracing::instrument;
 
 use crate::{
     event::Event,
-    tag::models::{Tag, TagGroup},
+    outcome::TrackListOutcome,
+    tag::models::{Tag, TagGroup, TagGroupId, TagId},
     ui::{
         theme::{Theme, catalog},
         widgets::{
@@ -18,19 +20,50 @@ use crate::{
 
 pub mod handler;
 
-#[derive(Debug)]
-pub struct ExplorerPane {}
+#[derive(Debug, Default)]
+pub struct ExplorerPane {
+    tag_groups_expanded: FxHashSet<TagGroupId>,
+}
 
 #[derive(Debug, Clone)]
-pub enum Message {}
+pub enum Message {
+    SelectedMainLibrary,
+    SelectedTag(TagId),
+    ToggleTagGroup(TagGroupId),
+}
 
 #[derive(Debug, Clone)]
-pub enum Outcome {}
+pub enum Outcome {
+    TrackList(TrackListOutcome),
+}
 
 impl ExplorerPane {
     #[instrument(skip(self), level = "debug")]
     pub fn update(&mut self, message: Message) -> (Task<Message>, Vec<Outcome>) {
-        (Task::none(), vec![])
+        let task = Task::none();
+        let mut outcomes = Vec::new();
+
+        match message {
+            Message::SelectedMainLibrary => {
+                outcomes.push(Outcome::TrackList(
+                    TrackListOutcome::DisplayMainLibraryTrackList,
+                ));
+            }
+            Message::SelectedTag(tag_id) => {
+                outcomes.push(Outcome::TrackList(TrackListOutcome::DisplayTagTrackList(
+                    tag_id,
+                )));
+            }
+            Message::ToggleTagGroup(tag_group_id) => {
+                if self.tag_groups_expanded.contains(&tag_group_id) {
+                    self.tag_groups_expanded.remove(&tag_group_id);
+                } else {
+                    self.tag_groups_expanded.insert(tag_group_id);
+                }
+            }
+        }
+
+        (task, outcomes)
     }
 
     #[instrument(skip(self), level = "debug")]
@@ -46,7 +79,9 @@ impl ExplorerPane {
     ) -> Element<'a, Message, Theme, Renderer> {
         let mut pane_elements: Vec<Element<'a, Message, Theme, Renderer>> = vec![
             container(text("Library")).into(),
-            button(row![icon(icons::MUSICAL_NOTE), text("Music")]).into(),
+            button(row![icon(icons::MUSICAL_NOTE), text("Music")])
+                .on_press(Message::SelectedMainLibrary)
+                .into(),
             vertical_separator(),
         ];
 
@@ -66,13 +101,20 @@ impl ExplorerPane {
             tag_groups_with_tags
                 .iter()
                 .map(|(tag_group, tag_group_tags)| {
-                    let mut dropdown_elements: Vec<Element<'a, Message, Theme, Renderer>> =
-                        vec![button(row![icon(icons::CHEVRON_DOWN), text(&tag_group.name)]).into()];
+                    let mut dropdown_elements: Vec<Element<'a, Message, Theme, Renderer>> = vec![
+                        button(row![icon(icons::CHEVRON_DOWN), text(&tag_group.name)])
+                            .on_press(Message::ToggleTagGroup(tag_group.id))
+                            .into(),
+                    ];
 
                     // Add check to conditionally add tags below.
-                    dropdown_elements.extend(tag_group_tags.iter().map(|tag_group_tag| {
-                        button(row![icon(icons::TAG), text(&tag_group_tag.name)]).into()
-                    }));
+                    if self.tag_groups_expanded.contains(&tag_group.id) {
+                        dropdown_elements.extend(tag_group_tags.iter().map(|tag_group_tag| {
+                            button(row![icon(icons::TAG), text(&tag_group_tag.name)])
+                                .on_press(Message::SelectedTag(tag_group_tag.id))
+                                .into()
+                        }));
+                    }
 
                     column(dropdown_elements).into()
                 }),
