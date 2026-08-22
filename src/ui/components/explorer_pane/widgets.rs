@@ -52,7 +52,7 @@ pub fn main_library_button<'a>(
             icon(icons::MUSICAL_NOTE)
                 .size(theme.sizes.font.body)
                 .height(16)
-                .align_y(alignment::Vertical::Top),
+                .align_y(alignment::Vertical::Center),
             ellipsized_text("Music")
         ]
         .align_y(alignment::Vertical::Center)
@@ -139,7 +139,6 @@ pub fn tag_group_dropdown_option<'a>(
     button(
         row![
             icon(icons::TAG)
-                .size(theme.sizes.font.body)
                 .height(16)
                 .align_y(alignment::Vertical::Top),
             ellipsized_text(&tag_group_tag.name)
