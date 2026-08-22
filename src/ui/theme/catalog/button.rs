@@ -6,7 +6,7 @@ use iced::{
 
 use crate::ui::theme::{
     Theme,
-    color::{lighten, mix},
+    color::{darken, lighten, mix},
 };
 
 pub type StyleFn<'a> = Box<dyn Fn(&Theme, Status) -> Style + 'a>;
@@ -166,7 +166,7 @@ pub fn explorer_pane_dropdown_controller(theme: &Theme, status: Status) -> Style
         Status::Active => theme.palette.text_muted,
         Status::Hovered => lighten(theme.palette.text_muted, 0.1),
         Status::Pressed => lighten(theme.palette.text_muted, 0.2),
-        Status::Disabled => theme.palette.text_subtle,
+        Status::Disabled => darken(theme.palette.text_muted, 0.3),
     };
 
     Style {
