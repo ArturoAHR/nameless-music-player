@@ -7,9 +7,9 @@ use iced_palace::widget::ellipsized_text;
 use crate::{
     app::TrackList,
     tag::models::{Tag, TagGroup},
-    ui::components::explorer_pane::Message,
     ui::{
-        theme::Theme,
+        components::explorer_pane::Message,
+        theme::{Theme, catalog},
         widgets::{
             icons::{self, icon},
             separator::vertical_separator,
@@ -59,6 +59,11 @@ pub fn main_library_button<'a>(
     .height(36)
     .width(Length::Fill)
     .padding([theme.sizes.space.md, theme.sizes.space.xl])
+    .style(if matches!(track_list, TrackList::MainLibrary) {
+        catalog::button::active_explorer_pane_option
+    } else {
+        catalog::button::explorer_pane_option
+    })
     .into()
 }
 
@@ -100,12 +105,8 @@ pub fn tag_group_dropdown_controller<'a>(
 
     button(
         row![
-            icon(chevron)
-                .size(theme.sizes.font.caption)
-                .color(theme.palette.text_muted),
-            ellipsized_text(tag_group.name.to_uppercase())
-                .size(theme.sizes.font.body)
-                .color(theme.palette.text_muted)
+            icon(chevron).size(theme.sizes.font.caption),
+            ellipsized_text(tag_group.name.to_uppercase()).size(theme.sizes.font.body)
         ]
         .width(Length::Fill)
         .align_y(alignment::Vertical::Center)
@@ -116,6 +117,7 @@ pub fn tag_group_dropdown_controller<'a>(
         Padding::from([theme.sizes.space.xxl, theme.sizes.space.xl]).bottom(theme.sizes.space.sm),
     )
     .on_press(Message::ToggleTagGroup(tag_group.id))
+    .style(catalog::button::explorer_pane_dropdown_controller)
     .into()
 }
 
@@ -140,5 +142,14 @@ pub fn tag_group_dropdown_option<'a>(
     .width(Length::Fill)
     .padding(Padding::from([theme.sizes.space.md, 52.0]).right(theme.sizes.space.sm))
     .on_press(Message::SelectedTag(tag_group_tag.id))
+    .style(
+        if let TrackList::Tag(tag_id) = track_list
+            && tag_id == &tag_group_tag.id
+        {
+            catalog::button::active_explorer_pane_option
+        } else {
+            catalog::button::explorer_pane_option
+        },
+    )
     .into()
 }
