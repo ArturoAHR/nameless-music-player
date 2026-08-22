@@ -20,7 +20,7 @@ impl ModalController {
         tag_groups: &[TagGroup],
         playback_controller_status: &PlaybackControllerStatus,
     ) -> (Task<modals::Message>, Vec<modals::Outcome>) {
-        let Some(AppModal::TagTracks(tag_tracks_modal)) = self.current_modal.as_mut() else {
+        let Some(AppModal::TagTracks(tag_tracks_modal)) = self.modal.as_mut() else {
             return (Task::none(), Vec::new());
         };
 
@@ -47,7 +47,7 @@ impl ModalController {
     }
 
     pub fn open_tag_tracks_modal(&mut self, track_tagging_queue: Vec<TrackId>) {
-        self.current_modal = Some(AppModal::TagTracks(TagTracksModal::new(
+        self.modal = Some(AppModal::TagTracks(TagTracksModal::new(
             track_tagging_queue,
         )));
     }

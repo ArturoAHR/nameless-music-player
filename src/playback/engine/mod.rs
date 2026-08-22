@@ -117,7 +117,7 @@ impl AudioEngine {
         }
     }
 
-    #[instrument(skip_all, ret, level = "debug", fields(current_status = ?self.status, status = ?status))]
+    #[instrument(skip_all, ret, level = "debug", fields(current_status = ?self.status, next_status = ?status))]
     fn set_status(&mut self, status: PlaybackEngineStatus) {
         if self.status == status {
             return;

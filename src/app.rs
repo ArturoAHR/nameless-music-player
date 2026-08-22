@@ -15,7 +15,7 @@ use tracing::{error, info, instrument};
 
 use crate::{
     app::Message::LoadTracks,
-    constants::CURRENT_PLAYBACK_POSITION_POLL_INTERVAL_MS,
+    constants::PLAYBACK_POSITION_POLL_INTERVAL_MS,
     error::AppError,
     library::scanner::scan_files_in_directory,
     playback::{
@@ -64,7 +64,7 @@ pub struct App {
     pub tag_groups: Vec<TagGroup>,
     pub track_tag_index: TrackTagIndex,
     pub displayed_track_ids: Vec<TrackId>,
-    pub current_playing_track_id: Option<TrackId>,
+    pub playing_track_id: Option<TrackId>,
     pub track_list: TrackList,
 
     pub window_size: Size,
@@ -75,7 +75,7 @@ pub struct App {
     pub playback_controller: PlaybackController,
     pub playback_generation_threshold: u64,
     pub playback_queue: PlaybackQueue,
-    pub current_playback_owner: PlaybackOwner,
+    pub playback_owner: PlaybackOwner,
 
     pub navigation_bar: NavigationBar,
     pub explorer_pane: ExplorerPane,
@@ -162,7 +162,7 @@ impl App {
                 tag_groups: Vec::new(),
                 track_tag_index: TrackTagIndex::default(),
                 displayed_track_ids: Vec::new(),
-                current_playing_track_id: None,
+                playing_track_id: None,
                 track_list: TrackList::MainLibrary,
 
                 window_size: Size::default(),
@@ -177,7 +177,7 @@ impl App {
                 playback_controller,
                 playback_generation_threshold: 0,
                 playback_queue: PlaybackQueue::default(),
-                current_playback_owner: PlaybackOwner::PlaybackBar,
+                playback_owner: PlaybackOwner::PlaybackBar,
 
                 navigation_bar: NavigationBar {},
                 explorer_pane: ExplorerPane {},
@@ -209,7 +209,7 @@ impl App {
     #[instrument(skip(self), level = "debug",
         fields(
             current_track = self
-                .current_playing_track_id
+                .playing_track_id
                 .as_ref()
                 .and_then(|track_id| self.tracks.get(track_id))
                 .map(|track| {
@@ -423,7 +423,7 @@ impl App {
             PlaybackControllerStatus::Playing
         ) {
             subscriptions.push(
-                every(milliseconds(CURRENT_PLAYBACK_POSITION_POLL_INTERVAL_MS)).map(|_| {
+                every(milliseconds(PLAYBACK_POSITION_POLL_INTERVAL_MS)).map(|_| {
                     Message::PlaybackController(
                         playback::controller::Message::PollPlaybackCurrentPlaybackPosition,
                     )

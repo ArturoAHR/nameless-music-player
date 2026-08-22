@@ -17,7 +17,7 @@ impl App {
                 &self.theme,
                 &self.tracks,
                 &self.displayed_track_ids,
-                self.playback_bar.current_playing_track_id.as_ref(),
+                self.playback_bar.playing_track_id.as_ref(),
             )
             .map(ui::Message::MainPane)
             .map(app::Message::Ui)

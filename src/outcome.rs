@@ -143,7 +143,7 @@ impl App {
                         self.playback_queue
                             .start(self.displayed_track_ids.clone(), Some(queued_track_id));
 
-                        self.current_playing_track_id = Some(queued_track_id);
+                        self.playing_track_id = Some(queued_track_id);
                     } else {
                         self.playback_queue.insert_next(queued_track_id);
                     }
@@ -163,13 +163,11 @@ impl App {
 
         match outcome {
             ModalOutcome::CloseModal => {
-                if !matches!(self.current_playback_owner, PlaybackOwner::PlaybackBar) {
-                    if let Some(current_playing_track_id) =
-                        self.playback_bar.current_playing_track_id
-                    {
+                if !matches!(self.playback_owner, PlaybackOwner::PlaybackBar) {
+                    if let Some(playing_track_id) = self.playback_bar.playing_track_id {
                         task = self.play_track_at_timestamp(
-                            current_playing_track_id,
-                            self.playback_bar.current_position as u64,
+                            playing_track_id,
+                            self.playback_bar.playback_position as u64,
                         )?;
 
                         if matches!(self.playback_bar.status, PlaybackBarStatus::Paused) {
@@ -182,7 +180,7 @@ impl App {
                         self.playback_controller.pause()?;
                     }
 
-                    self.current_playback_owner = PlaybackOwner::PlaybackBar;
+                    self.playback_owner = PlaybackOwner::PlaybackBar;
                 }
 
                 task = task.chain(self.modal_controller.close_modal());
@@ -196,7 +194,7 @@ impl App {
                     return Ok(task);
                 };
 
-                self.current_playback_owner = PlaybackOwner::TagTrackModal;
+                self.playback_owner = PlaybackOwner::TagTrackModal;
 
                 task = self.play_track(*first_track_id)?;
 

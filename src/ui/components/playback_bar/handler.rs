@@ -45,7 +45,7 @@ impl App {
 
     pub fn notify_playback_bar(&mut self, event: &Event) -> Task<app::Message> {
         self.playback_bar
-            .on_event(event, &self.current_playback_owner)
+            .on_event(event, &self.playback_owner)
             .map(ui::Message::PlaybackBar)
             .map(app::Message::Ui)
     }

@@ -227,7 +227,7 @@ impl PlaybackController {
         Ok(())
     }
 
-    pub fn get_current_track_samples_played(&self) -> u64 {
+    pub fn get_track_samples_played(&self) -> u64 {
         let track_start_timestamp = self.track_start_timestamp.load(Ordering::Acquire);
         let samples_played = self.samples_played.load(Ordering::Relaxed);
 
