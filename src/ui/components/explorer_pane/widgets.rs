@@ -6,7 +6,10 @@ use iced_palace::widget::ellipsized_text;
 
 use crate::{
     app::TrackList,
-    tag::models::{Tag, TagGroup},
+    tag::{
+        index::TrackTagIndex,
+        models::{Tag, TagGroup},
+    },
     ui::{
         components::explorer_pane::Message,
         theme::{Theme, catalog},
@@ -70,23 +73,23 @@ pub fn main_library_button<'a>(
 pub fn tag_group_dropdown<'a>(
     theme: &Theme,
     tag_group: &TagGroup,
-    tag_group_tags: &Vec<&'a Tag>,
+    tag_group_tags: &[&'a Tag],
     track_list: &TrackList,
+    track_tag_index: &TrackTagIndex,
     is_tag_group_expanded: bool,
 ) -> Element<'a, Message, Theme, Renderer> {
     let mut dropdown_elements: Vec<Element<'a, Message, Theme, Renderer>> =
         vec![tag_group_dropdown_controller(
             theme,
             tag_group,
+            tag_group_tags,
             is_tag_group_expanded,
         )];
 
     if is_tag_group_expanded {
-        dropdown_elements.extend(
-            tag_group_tags
-                .iter()
-                .map(|tag_group_tag| tag_group_dropdown_option(theme, tag_group_tag, track_list)),
-        );
+        dropdown_elements.extend(tag_group_tags.iter().map(|tag_group_tag| {
+            tag_group_dropdown_option(theme, tag_group_tag, track_list, track_tag_index)
+        }));
     }
 
     column(dropdown_elements).into()
@@ -95,8 +98,11 @@ pub fn tag_group_dropdown<'a>(
 pub fn tag_group_dropdown_controller<'a>(
     theme: &Theme,
     tag_group: &TagGroup,
+    tag_group_tags: &[&Tag],
     is_tag_group_expanded: bool,
 ) -> Element<'a, Message, Theme, Renderer> {
+    let on_press = (!tag_group_tags.is_empty()).then_some(Message::ToggleTagGroup(tag_group.id));
+
     let chevron = if is_tag_group_expanded {
         icons::CHEVRON_DOWN
     } else {
@@ -116,7 +122,7 @@ pub fn tag_group_dropdown_controller<'a>(
     .padding(
         Padding::from([theme.sizes.space.xxl, theme.sizes.space.xl]).bottom(theme.sizes.space.sm),
     )
-    .on_press(Message::ToggleTagGroup(tag_group.id))
+    .on_press_maybe(on_press)
     .style(catalog::button::explorer_pane_dropdown_controller)
     .into()
 }
@@ -125,7 +131,13 @@ pub fn tag_group_dropdown_option<'a>(
     theme: &Theme,
     tag_group_tag: &'a Tag,
     track_list: &TrackList,
+    track_tag_index: &TrackTagIndex,
 ) -> Element<'a, Message, Theme, Renderer> {
+    let on_press = track_tag_index
+        .get_tag_tracks(tag_group_tag.id)
+        .is_some_and(|tag_tracks| !tag_tracks.is_empty())
+        .then_some(Message::SelectedTag(tag_group_tag.id));
+
     button(
         row![
             icon(icons::TAG)
@@ -141,7 +153,7 @@ pub fn tag_group_dropdown_option<'a>(
     .height(36)
     .width(Length::Fill)
     .padding(Padding::from([theme.sizes.space.md, 52.0]).right(theme.sizes.space.sm))
-    .on_press(Message::SelectedTag(tag_group_tag.id))
+    .on_press_maybe(on_press)
     .style(
         if let TrackList::Tag(tag_id) = track_list
             && tag_id == &tag_group_tag.id

@@ -9,7 +9,10 @@ use crate::{
     app::TrackList,
     event::Event,
     outcome::TrackListOutcome,
-    tag::models::{Tag, TagGroup, TagGroupId, TagId},
+    tag::{
+        index::TrackTagIndex,
+        models::{Tag, TagGroup, TagGroupId, TagId},
+    },
     ui::{
         components::explorer_pane::widgets::{main_library_section, tag_group_dropdown},
         theme::{Theme, catalog},
@@ -76,6 +79,7 @@ impl ExplorerPane {
         tags: &'a [Tag],
         tag_groups: &'a [TagGroup],
         track_list: &'a TrackList,
+        track_tag_index: &'a TrackTagIndex,
     ) -> Element<'a, Message, Theme, Renderer> {
         let mut pane_elements: Vec<Element<'a, Message, Theme, Renderer>> = Vec::new();
 
@@ -104,6 +108,7 @@ impl ExplorerPane {
                         tag_group,
                         tag_group_tags,
                         track_list,
+                        track_tag_index,
                         is_tag_group_expanded,
                     )
                 }),
