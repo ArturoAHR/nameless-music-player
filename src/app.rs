@@ -65,6 +65,7 @@ pub struct App {
     pub track_tag_index: TrackTagIndex,
     pub displayed_track_ids: Vec<TrackId>,
     pub current_playing_track_id: Option<TrackId>,
+    pub track_list: TrackList,
 
     pub window_size: Size,
     pub main_window_id: Option<window::Id>,
@@ -100,6 +101,13 @@ pub enum AppStatus {
 pub enum PlaybackOwner {
     PlaybackBar,
     TagTrackModal,
+}
+
+#[derive(Debug)]
+pub enum TrackList {
+    MainLibrary,
+    Tag,
+    AdvancedSearch,
 }
 
 #[derive(Debug, Clone)]
@@ -155,6 +163,7 @@ impl App {
                 track_tag_index: TrackTagIndex::default(),
                 displayed_track_ids: Vec::new(),
                 current_playing_track_id: None,
+                track_list: TrackList::MainLibrary,
 
                 window_size: Size::default(),
                 main_window_id: None,
