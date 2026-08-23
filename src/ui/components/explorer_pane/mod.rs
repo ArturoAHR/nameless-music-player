@@ -116,7 +116,7 @@ impl ExplorerPane {
 
         pane_elements.extend([Space::new().height(theme.sizes.space.lg).into()]);
 
-        container(scrollable(column(pane_elements)))
+        container(scrollable(column(pane_elements)).style(catalog::scrollable::pane))
             .height(Length::Fill)
             .width(Length::Fill)
             .style(catalog::container::background_surface_raised)
