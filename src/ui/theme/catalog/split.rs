@@ -12,14 +12,14 @@ impl Catalog for Theme {
         Box::new(|theme| Style {
             snap: false,
             focused: StyleSheet {
-                color: theme.palette.border,
+                color: theme.palette.surface_sunken,
                 radius: Radius::default(),
-                width: 0.0,
+                width: 5.0,
             },
             unfocused: StyleSheet {
-                color: theme.palette.border,
+                color: theme.palette.surface_sunken,
                 radius: Radius::default(),
-                width: 0.0,
+                width: 5.0,
             },
         })
     }
