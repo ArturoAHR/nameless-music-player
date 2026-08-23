@@ -182,7 +182,7 @@ impl App {
                 explorer_pane: ExplorerPane::default(),
                 main_pane: MainPane::default(),
                 queue_pane: QueuePane::default(),
-                track_information_pane: TrackInformationPane {},
+                track_information_pane: TrackInformationPane::default(),
                 status_bar: StatusBar {},
                 playback_bar: PlaybackBar::new(),
                 modal_controller: ModalController::default(),
