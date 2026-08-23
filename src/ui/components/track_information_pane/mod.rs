@@ -74,7 +74,7 @@ impl TrackInformationPane {
                     center(text("No image").color(theme.palette.text_muted))
                         .width(300)
                         .height(300)
-                        .style(catalog::container::modal)
+                        .style(catalog::container::track_thumbnail)
                 ]
                 .width(Length::Fill)
                 .align_x(alignment::Horizontal::Center)

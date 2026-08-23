@@ -125,3 +125,16 @@ pub fn active_badge(theme: &Theme) -> Style {
         ..Style::default()
     }
 }
+
+pub fn track_thumbnail(theme: &Theme) -> Style {
+    Style {
+        background: Some(theme.palette.surface.into()),
+        text_color: None,
+        border: Border {
+            color: theme.palette.border,
+            width: theme.sizes.border.width,
+            radius: Radius::from(theme.sizes.border.radius_sm),
+        },
+        ..Style::default()
+    }
+}
