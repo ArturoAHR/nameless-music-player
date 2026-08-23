@@ -1,5 +1,5 @@
 use iced::Task;
-use itertools::Itertools;
+use rustc_hash::FxHashSet;
 use tracing::{error, instrument, warn};
 
 use crate::{
@@ -225,6 +225,15 @@ impl App {
 
                 self.track_tag_index.toggle_track_tag(track_id, tag_id);
 
+                if let TrackList::Tag(tag_id) = self.track_list
+                    && self
+                        .track_tag_index
+                        .get_tag_tracks(tag_id)
+                        .is_none_or(FxHashSet::is_empty)
+                {
+                    self.display_main_library_tracks();
+                }
+
                 // Instead of toggling at the database level we explicitly either delete or insert
                 // to ensure consistency with the in memory track tag index
                 let pool = self.pool.clone();
@@ -256,6 +265,12 @@ impl App {
                 .chain(Task::done(Message::LoadTagLibrary))
             }
             TagOutcome::RemoveTag(tag_id) => {
+                if let TrackList::Tag(track_list_tag_id) = self.track_list
+                    && track_list_tag_id == tag_id
+                {
+                    self.display_main_library_tracks();
+                }
+
                 let pool = self.pool.clone();
                 Task::perform(
                     async move { soft_delete_tag(pool, tag_id).await },
@@ -264,6 +279,16 @@ impl App {
                 .chain(Task::done(Message::LoadTagLibrary))
             }
             TagOutcome::RemoveTagGroup(tag_group_id) => {
+                if let TrackList::Tag(tag_id) = self.track_list
+                    && self
+                        .tags
+                        .iter()
+                        .find(|tag| tag.id == tag_id)
+                        .is_none_or(|tag| tag.tag_group_id == tag_group_id)
+                {
+                    self.display_main_library_tracks();
+                }
+
                 let pool = self.pool.clone();
                 Task::perform(
                     async move { soft_delete_tag_group(pool, tag_group_id).await },
@@ -285,27 +310,10 @@ impl App {
 
         match outcome {
             TrackListOutcome::DisplayMainLibraryTrackList => {
-                self.track_list = TrackList::MainLibrary;
-
-                self.displayed_track_ids = self
-                    .tracks
-                    .iter()
-                    .sorted_by_cached_key(|(_track_id, track)| {
-                        (
-                            track.artist.as_deref().unwrap_or("Unknown").to_lowercase(),
-                            track.title.as_deref().unwrap_or("Untitled").to_lowercase(),
-                        )
-                    })
-                    .map(|(track_id, _track)| track_id)
-                    .copied()
-                    .collect();
+                self.display_main_library_tracks();
             }
             TrackListOutcome::DisplayTagTrackList(tag_id) => {
-                self.track_list = TrackList::Tag(tag_id);
-
-                if let Some(tag_track_ids) = self.track_tag_index.get_tag_tracks(tag_id) {
-                    self.displayed_track_ids = tag_track_ids.iter().copied().collect();
-                }
+                self.display_tag_tracks(tag_id);
             }
         }
 

@@ -1,8 +1,10 @@
 use iced::{Element, Renderer, Task};
+use itertools::Itertools;
 
 use crate::{
-    app::{self, App},
+    app::{self, App, TrackList},
     event::Event,
+    tag::models::TagId,
     ui::{
         self,
         components::main_pane::{Message, Outcome},
@@ -52,5 +54,30 @@ impl App {
             .on_event(event)
             .map(ui::Message::MainPane)
             .map(app::Message::Ui)
+    }
+
+    pub fn display_main_library_tracks(&mut self) {
+        self.track_list = TrackList::MainLibrary;
+
+        self.displayed_track_ids = self
+            .tracks
+            .iter()
+            .sorted_by_cached_key(|(_track_id, track)| {
+                (
+                    track.artist.as_deref().unwrap_or("Unknown").to_lowercase(),
+                    track.title.as_deref().unwrap_or("Untitled").to_lowercase(),
+                )
+            })
+            .map(|(track_id, _track)| track_id)
+            .copied()
+            .collect();
+    }
+
+    pub fn display_tag_tracks(&mut self, tag_id: TagId) {
+        if let Some(tag_track_ids) = self.track_tag_index.get_tag_tracks(tag_id) {
+            self.track_list = TrackList::Tag(tag_id);
+
+            self.displayed_track_ids = tag_track_ids.iter().copied().collect();
+        }
     }
 }
