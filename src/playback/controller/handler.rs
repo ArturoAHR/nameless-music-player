@@ -22,7 +22,7 @@ pub enum Message {
 }
 
 impl App {
-    fn get_current_position(&self) -> Option<f64> {
+    fn get_playback_position(&self) -> Option<f64> {
         if matches!(
             self.playback_controller.status,
             PlaybackControllerStatus::Stopped
@@ -36,16 +36,16 @@ impl App {
         }
 
         let track = self
-            .current_playing_track_id
+            .playing_track_id
             .and_then(|track_id| self.tracks.get(&track_id))?;
 
         let output_format = self.playback_controller.output_format.as_ref()?;
 
-        let current_position = self.playback_controller.get_current_track_samples_played() as f64
+        let playback_position = self.playback_controller.get_track_samples_played() as f64
             * (track.sample_rate as f64 / f64::from(output_format.sample_rate))
             / f64::from(output_format.channels);
 
-        Some(current_position)
+        Some(playback_position)
     }
 
     #[instrument(skip(self))]
@@ -61,7 +61,7 @@ impl App {
                 #[allow(clippy::single_match)]
                 match event {
                     AudioPipelineThreadEvent::TrackFinished
-                        if matches!(self.current_playback_owner, PlaybackOwner::PlaybackBar) =>
+                        if matches!(self.playback_owner, PlaybackOwner::PlaybackBar) =>
                     {
                         match self.play_next_track() {
                             Ok(event_tasks) => task = event_tasks,
@@ -71,8 +71,8 @@ impl App {
                         }
                     }
                     AudioPipelineThreadEvent::TrackFinished
-                        if matches!(self.current_playback_owner, PlaybackOwner::TagTrackModal)
-                            && let Some(track_id) = self.current_playing_track_id =>
+                        if matches!(self.playback_owner, PlaybackOwner::TagTrackModal)
+                            && let Some(track_id) = self.playing_track_id =>
                     {
                         match self.play_track(track_id) {
                             Ok(event_tasks) => task = event_tasks,
@@ -88,8 +88,8 @@ impl App {
                 }
             }
             Message::PollPlaybackCurrentPlaybackPosition => {
-                if let Some(current_position) = self.get_current_position() {
-                    task = self.broadcast(Event::PlaybackProgressed(current_position));
+                if let Some(playback_position) = self.get_playback_position() {
+                    task = self.broadcast(Event::PlaybackProgressed(playback_position));
                 }
             }
 
@@ -132,7 +132,7 @@ impl App {
 
         self.playback_controller.play(track)?;
 
-        self.current_playing_track_id = Some(track_id);
+        self.playing_track_id = Some(track_id);
 
         Ok(event_tasks)
     }
@@ -182,7 +182,7 @@ impl App {
         // TODO: Add proper play at timestamp command in audio pipeline
         self.playback_controller.play(track)?;
 
-        self.current_playing_track_id = Some(track_id);
+        self.playing_track_id = Some(track_id);
 
         self.playback_controller.seek(timestamp)?;
 

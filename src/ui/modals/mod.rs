@@ -29,7 +29,7 @@ pub enum AppModal {
 
 #[derive(Default)]
 pub struct ModalController {
-    current_modal: Option<AppModal>,
+    modal: Option<AppModal>,
 }
 
 #[derive(Debug, Clone)]
@@ -74,11 +74,9 @@ impl ModalController {
                 self.open_tag_tracks_modal(track_tagging_queue);
             }
             Message::CloseModal => {
-                self.current_modal = None;
+                self.modal = None;
             }
-            Message::Keyboard(event)
-                if let Some(AppModal::TagTracks(_)) = self.current_modal.as_ref() =>
-            {
+            Message::Keyboard(event) if let Some(AppModal::TagTracks(_)) = self.modal.as_ref() => {
                 (task, outcomes) = self.handle_tag_tracks_modal(
                     tag_tracks::Message::Keyboard(event),
                     tracks,
@@ -113,7 +111,7 @@ impl ModalController {
     ) -> Task<Message> {
         let mut task = Task::none();
 
-        let Some(current_modal) = self.current_modal.as_mut() else {
+        let Some(current_modal) = self.modal.as_mut() else {
             return task;
         };
 
@@ -142,7 +140,7 @@ impl ModalController {
         tag_groups: &'a [TagGroup],
         track_tag_index: &'a TrackTagIndex,
     ) -> Option<Element<'a, Message, Theme, Renderer>> {
-        match self.current_modal.as_ref()? {
+        match self.modal.as_ref()? {
             AppModal::ManageTags(manage_tags_modal) => Some(
                 manage_tags_modal
                     .view(theme, tags, tag_groups)
@@ -157,7 +155,7 @@ impl ModalController {
     }
 
     pub fn close_modal(&mut self) -> Task<app::Message> {
-        self.current_modal = None;
+        self.modal = None;
 
         // TODO: Add saving current track tags index to the database on closing tag tracks modal.
 
@@ -165,6 +163,6 @@ impl ModalController {
     }
 
     pub fn is_modal_active(&self) -> bool {
-        self.current_modal.is_some()
+        self.modal.is_some()
     }
 }

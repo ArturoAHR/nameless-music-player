@@ -15,7 +15,7 @@ impl ModalController {
         tags: &[Tag],
         tag_groups: &[TagGroup],
     ) -> (Task<modals::Message>, Vec<modals::Outcome>) {
-        let Some(AppModal::ManageTags(manage_tags_modal)) = self.current_modal.as_mut() else {
+        let Some(AppModal::ManageTags(manage_tags_modal)) = self.modal.as_mut() else {
             return (Task::none(), Vec::new());
         };
 
@@ -35,6 +35,6 @@ impl ModalController {
     }
 
     pub fn open_manage_tags_modal(&mut self) {
-        self.current_modal = Some(AppModal::ManageTags(ManageTagsModal::new()));
+        self.modal = Some(AppModal::ManageTags(ManageTagsModal::new()));
     }
 }

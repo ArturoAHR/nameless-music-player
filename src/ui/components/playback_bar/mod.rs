@@ -31,8 +31,8 @@ pub mod widgets;
 
 #[derive(Debug)]
 pub struct PlaybackBar {
-    pub current_position: f64,
-    pub current_playing_track_id: Option<TrackId>,
+    pub playback_position: f64,
+    pub playing_track_id: Option<TrackId>,
 
     pub status: PlaybackBarStatus,
 
@@ -74,8 +74,8 @@ impl PlaybackBar {
     pub fn new() -> Self {
         Self {
             status: PlaybackBarStatus::Playing,
-            current_position: 0.0,
-            current_playing_track_id: None,
+            playback_position: 0.0,
+            playing_track_id: None,
 
             muted: false,
             volume_percentage: 100,
@@ -93,7 +93,7 @@ impl PlaybackBar {
 
         match message {
             Message::Scrubbed(position) => {
-                self.current_position = position;
+                self.playback_position = position;
 
                 if matches!(
                     playback_controller_status,
@@ -110,16 +110,16 @@ impl PlaybackBar {
                 };
 
                 outcomes.push(Outcome::Playback(PlaybackOutcome::Seek {
-                    timestamp: self.current_position.round() as u64,
+                    timestamp: self.playback_position.round() as u64,
                     post_seek_status: Some(pre_seek_status),
                 }));
             }
-            Message::Resume if self.current_playing_track_id.is_some() => {
+            Message::Resume if self.playing_track_id.is_some() => {
                 self.status = PlaybackBarStatus::Playing;
 
                 outcomes.push(Outcome::Playback(PlaybackOutcome::Resume));
             }
-            Message::Pause if self.current_playing_track_id.is_some() => {
+            Message::Pause if self.playing_track_id.is_some() => {
                 self.status = PlaybackBarStatus::Paused;
 
                 outcomes.push(Outcome::Playback(PlaybackOutcome::Pause));
@@ -153,14 +153,10 @@ impl PlaybackBar {
 
     #[allow(clippy::single_match)]
     #[instrument(skip(self), level = "debug")]
-    pub fn on_event(
-        &mut self,
-        event: &Event,
-        current_playback_owner: &PlaybackOwner,
-    ) -> Task<Message> {
+    pub fn on_event(&mut self, event: &Event, playback_owner: &PlaybackOwner) -> Task<Message> {
         let task = Task::none();
 
-        if !matches!(current_playback_owner, PlaybackOwner::PlaybackBar) {
+        if !matches!(playback_owner, PlaybackOwner::PlaybackBar) {
             trace!("Playback Bar does not own the playback currently, ignoring event");
 
             return task;
@@ -170,13 +166,13 @@ impl PlaybackBar {
             Event::AttemptedPlayingTrack => {
                 self.status = PlaybackBarStatus::Playing;
 
-                self.current_position = 0.0;
+                self.playback_position = 0.0;
             }
             Event::PlaybackProgressed(position) => {
-                self.current_position = *position;
+                self.playback_position = *position;
             }
             Event::ActiveTrackChanged(track_id) => {
-                self.current_playing_track_id = *track_id;
+                self.playing_track_id = *track_id;
             }
             _ => {}
         }
@@ -191,23 +187,23 @@ impl PlaybackBar {
         playback_queue: &PlaybackQueue,
     ) -> Element<'a, Message, Theme, Renderer> {
         let mut total_frames = 1.0;
-        let mut current_position = 0.0;
+        let mut playback_position = 0.0;
 
         let mut track_name_label = String::new();
-        let (track_duration_timestamp, current_position_timestamp) = self
-            .current_playing_track_id
+        let (track_duration_timestamp, playback_position_timestamp) = self
+            .playing_track_id
             .and_then(|track_id| tracks.get(&track_id))
             .map_or_else(
                 || ("0:00".to_owned(), "0:00".to_owned()),
                 |track| {
                     total_frames = track.frames as f64;
-                    current_position = self.current_position;
+                    playback_position = self.playback_position;
                     track_name_label = get_track_label(track);
 
                     (
                         get_track_duration_label(track),
                         format_duration(
-                            (current_position / track.sample_rate as f64).floor() as u64
+                            (playback_position / track.sample_rate as f64).floor() as u64
                         ),
                     )
                 },
@@ -221,7 +217,7 @@ impl PlaybackBar {
         };
 
         let current_time_label =
-            format!("{current_position_timestamp} / {track_duration_timestamp}");
+            format!("{playback_position_timestamp} / {track_duration_timestamp}");
 
         let repeat_mode_icon = match playback_queue.repeat_mode {
             PlaybackRepeatMode::NoRepeat => icons::MENU, //Placeholder
@@ -243,7 +239,7 @@ impl PlaybackBar {
                         Space::new().width(Length::Fill),
                         text(current_time_label).font(Font::MONOSPACE)
                     ],
-                    slider(0.0..=total_frames, current_position, Message::Scrubbed)
+                    slider(0.0..=total_frames, playback_position, Message::Scrubbed)
                         .on_release(Message::Seeked)
                 ]
                 .spacing(theme.sizes.space.md),

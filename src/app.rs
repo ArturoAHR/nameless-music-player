@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 
 use iced_split::{horizontal_split, vertical_split};
-use itertools::Itertools;
 use rustc_hash::FxHashMap;
 use sqlx::SqlitePool;
 
@@ -15,7 +14,7 @@ use tracing::{error, info, instrument};
 
 use crate::{
     app::Message::LoadTracks,
-    constants::CURRENT_PLAYBACK_POSITION_POLL_INTERVAL_MS,
+    constants::PLAYBACK_POSITION_POLL_INTERVAL_MS,
     error::AppError,
     library::scanner::scan_files_in_directory,
     playback::{
@@ -30,7 +29,7 @@ use crate::{
     },
     tag::{
         index::TrackTagIndex,
-        models::{Tag, TagGroup},
+        models::{Tag, TagGroup, TagId},
         repository::{TagLibrary, load_tag_library},
     },
     track::{
@@ -64,7 +63,8 @@ pub struct App {
     pub tag_groups: Vec<TagGroup>,
     pub track_tag_index: TrackTagIndex,
     pub displayed_track_ids: Vec<TrackId>,
-    pub current_playing_track_id: Option<TrackId>,
+    pub playing_track_id: Option<TrackId>,
+    pub track_list: TrackList,
 
     pub window_size: Size,
     pub main_window_id: Option<window::Id>,
@@ -74,7 +74,7 @@ pub struct App {
     pub playback_controller: PlaybackController,
     pub playback_generation_threshold: u64,
     pub playback_queue: PlaybackQueue,
-    pub current_playback_owner: PlaybackOwner,
+    pub playback_owner: PlaybackOwner,
 
     pub navigation_bar: NavigationBar,
     pub explorer_pane: ExplorerPane,
@@ -100,6 +100,13 @@ pub enum AppStatus {
 pub enum PlaybackOwner {
     PlaybackBar,
     TagTrackModal,
+}
+
+#[derive(Debug)]
+pub enum TrackList {
+    MainLibrary,
+    Tag(TagId),
+    AdvancedSearch,
 }
 
 #[derive(Debug, Clone)]
@@ -154,7 +161,8 @@ impl App {
                 tag_groups: Vec::new(),
                 track_tag_index: TrackTagIndex::default(),
                 displayed_track_ids: Vec::new(),
-                current_playing_track_id: None,
+                playing_track_id: None,
+                track_list: TrackList::MainLibrary,
 
                 window_size: Size::default(),
                 main_window_id: None,
@@ -168,10 +176,10 @@ impl App {
                 playback_controller,
                 playback_generation_threshold: 0,
                 playback_queue: PlaybackQueue::default(),
-                current_playback_owner: PlaybackOwner::PlaybackBar,
+                playback_owner: PlaybackOwner::PlaybackBar,
 
                 navigation_bar: NavigationBar {},
-                explorer_pane: ExplorerPane {},
+                explorer_pane: ExplorerPane::default(),
                 main_pane: MainPane::default(),
                 queue_pane: QueuePane::default(),
                 track_information_pane: TrackInformationPane {},
@@ -200,7 +208,7 @@ impl App {
     #[instrument(skip(self), level = "debug",
         fields(
             current_track = self
-                .current_playing_track_id
+                .playing_track_id
                 .as_ref()
                 .and_then(|track_id| self.tracks.get(track_id))
                 .map(|track| {
@@ -234,18 +242,7 @@ impl App {
                 self.tracks = tracks.into_iter().map(|track| (track.id, track)).collect();
 
                 // TODO: Add loading state to main pane before setting the displayed tracks
-                self.displayed_track_ids = self
-                    .tracks
-                    .iter()
-                    .sorted_by_cached_key(|(_track_id, track)| {
-                        (
-                            track.artist.as_deref().unwrap_or("Unknown").to_lowercase(),
-                            track.title.as_deref().unwrap_or("Untitled").to_lowercase(),
-                        )
-                    })
-                    .map(|(track_id, _track)| track_id)
-                    .copied()
-                    .collect();
+                self.display_main_library_tracks();
 
                 // info!("Tracks loaded successfully");
             }
@@ -414,7 +411,7 @@ impl App {
             PlaybackControllerStatus::Playing
         ) {
             subscriptions.push(
-                every(milliseconds(CURRENT_PLAYBACK_POSITION_POLL_INTERVAL_MS)).map(|_| {
+                every(milliseconds(PLAYBACK_POSITION_POLL_INTERVAL_MS)).map(|_| {
                     Message::PlaybackController(
                         playback::controller::Message::PollPlaybackCurrentPlaybackPosition,
                     )

@@ -114,13 +114,13 @@ impl MainPane {
         _theme: &'a Theme,
         tracks: &'a FxHashMap<TrackId, Track>,
         displayed_track_ids: &Vec<TrackId>,
-        current_playing_track_id: Option<&TrackId>,
+        playing_track_id: Option<&TrackId>,
     ) -> Element<'a, Message, Theme, Renderer> {
-        let current_playing_track_id = current_playing_track_id.copied().unwrap_or(-1);
+        let playing_track_id = playing_track_id.copied().unwrap_or(-1);
 
         let columns = vec![
             table::column(TrackTableColumn::NowPlaying, None, move |track: &Track| {
-                if track.id == current_playing_track_id {
+                if track.id == playing_track_id {
                     Element::from(icon(icons::PLAY))
                 } else {
                     Element::from(Space::new())

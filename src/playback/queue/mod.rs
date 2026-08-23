@@ -63,16 +63,16 @@ impl PlaybackQueue {
     }
 
     /// Sets the track pool and optionally the initial track.
-    pub fn start(&mut self, track_pool: Vec<TrackId>, current_playing_track_id: Option<TrackId>) {
+    pub fn start(&mut self, track_pool: Vec<TrackId>, playing_track_id: Option<TrackId>) {
         self.cursor = 0;
         self.entries.clear();
         self.track_pool = track_pool;
 
-        if let Some(current_playing_track_id) = current_playing_track_id {
+        if let Some(playing_track_id) = playing_track_id {
             let id = self.get_next_entry_id();
 
             self.entries
-                .push_back(PlaybackQueueEntry::system(id, current_playing_track_id));
+                .push_back(PlaybackQueueEntry::system(id, playing_track_id));
         }
 
         self.generate_next_entries(PLAYBACK_QUEUE_LENGTH);
@@ -240,9 +240,9 @@ impl PlaybackQueue {
         let cursor_position = self.cursor.min(self.entries.len());
         let mut entries_tail = self.entries.split_off(cursor_position);
 
-        let current_entry_id = entries_tail.front().map(|entry| entry.id);
+        let entry_id = entries_tail.front().map(|entry| entry.id);
         entries_tail.retain(|entry| {
-            current_entry_id.is_some_and(|current_entry_id| current_entry_id == entry.id)
+            entry_id.is_some_and(|current_entry_id| current_entry_id == entry.id)
                 || matches!(entry.source, PlaybackQueueEntrySource::User)
         });
 

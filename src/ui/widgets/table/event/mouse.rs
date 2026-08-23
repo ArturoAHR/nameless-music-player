@@ -237,7 +237,6 @@ where
 
         if state.mouse_interaction.area.is_some() {
             shell.request_redraw();
-            shell.capture_event();
         }
     }
 

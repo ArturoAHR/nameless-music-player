@@ -143,7 +143,7 @@ fn audio_pipeline_thread_process(
                 warn!("Recoverable audio pipeline error: {error}");
             }
             Err(error) => {
-                let current_track =
+                let track =
                     audio_pipeline
                         .audio_track_pipelines
                         .first()
@@ -158,7 +158,7 @@ fn audio_pipeline_thread_process(
 
                 audio_pipeline.set_status(AudioPipelineStatus::Paused);
 
-                error!(current_track = ?current_track, "Audio pipeline error: {error}");
+                error!(track = ?track, "Audio pipeline error: {error}");
 
                 audio_pipeline
                     .configuration

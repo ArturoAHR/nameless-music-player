@@ -57,7 +57,7 @@ impl App {
 
     pub fn notify_modal(&mut self, event: &Event) -> Task<app::Message> {
         self.modal_controller
-            .on_event(event, &self.current_playback_owner)
+            .on_event(event, &self.playback_owner)
             .map(ui::Message::Modal)
             .map(app::Message::Ui)
     }
