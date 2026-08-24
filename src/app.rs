@@ -170,7 +170,7 @@ impl App {
                 pane_split_ratio: PaneSplitPositions {
                     explorer_main: 0.2,
                     main_queue: 0.7,
-                    queue_track_information: 0.8,
+                    queue_track_information: 0.5,
                 },
 
                 playback_controller,
@@ -182,7 +182,7 @@ impl App {
                 explorer_pane: ExplorerPane::default(),
                 main_pane: MainPane::default(),
                 queue_pane: QueuePane::default(),
-                track_information_pane: TrackInformationPane {},
+                track_information_pane: TrackInformationPane::default(),
                 status_bar: StatusBar {},
                 playback_bar: PlaybackBar::new(),
                 modal_controller: ModalController::default(),

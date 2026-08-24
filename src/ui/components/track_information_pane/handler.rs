@@ -9,7 +9,7 @@ use crate::{
 impl App {
     pub fn view_track_information_pane(&self) -> Element<'_, app::Message, Theme, Renderer> {
         self.track_information_pane
-            .view(&self.theme)
+            .view(&self.theme, &self.tracks)
             .map(ui::Message::TrackInformationPane)
             .map(app::Message::Ui)
     }
@@ -39,7 +39,7 @@ impl App {
 
     pub fn notify_track_information_pane(&mut self, event: &Event) -> Task<app::Message> {
         self.track_information_pane
-            .on_event(event)
+            .on_event(event, &self.playback_owner)
             .map(ui::Message::TrackInformationPane)
             .map(app::Message::Ui)
     }
