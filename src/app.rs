@@ -170,7 +170,7 @@ impl App {
                 pane_split_ratio: PaneSplitPositions {
                     explorer_main: 0.2,
                     main_queue: 0.7,
-                    queue_track_information: 0.8,
+                    queue_track_information: 0.5,
                 },
 
                 playback_controller,
