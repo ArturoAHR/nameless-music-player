@@ -3,6 +3,7 @@ use sea_query::enum_def;
 use crate::{traits::Identifiable, ui::widgets::table::TableRow};
 
 #[enum_def(table_name = "track")]
+#[cfg_attr(any(test, feature = "testing"), derive(Default))]
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct Track {
     pub id: i64,
