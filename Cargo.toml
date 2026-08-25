@@ -30,6 +30,8 @@ cast_possible_wrap = "allow"
 
 needless_pass_by_value = "allow"
 
+implicit_hasher = "allow"
+
 [features]
 development = ["iced/debug"]
 testing = ["dep:iced_test"]
