@@ -7,10 +7,15 @@ use crate::{
         SearchCondition, SearchConditionGroup, SearchConditionGroupOperator,
         SearchConditionStatement,
     },
-    ui::{theme::Theme, widgets::modal::modal_container},
+    ui::{
+        modals::advanced_search::widgets::{body, footer, header},
+        theme::Theme,
+        widgets::{modal::modal_container, separator::vertical_separator},
+    },
 };
 
 pub mod handler;
+pub mod widgets;
 
 #[derive(Debug)]
 pub struct AdvancedSearchModal {
@@ -40,8 +45,17 @@ impl AdvancedSearchModal {
         Task::none()
     }
 
-    pub fn view<'a>(&self, _theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
-        modal_container(column![]).width(890.0).height(660.0).into()
+    pub fn view<'a>(&self, theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
+        modal_container(column![
+            header(theme),
+            vertical_separator(),
+            body(theme, &self.criteria),
+            vertical_separator(),
+            footer(theme)
+        ])
+        .width(500.0)
+        .height(600.0)
+        .into()
     }
 }
 
