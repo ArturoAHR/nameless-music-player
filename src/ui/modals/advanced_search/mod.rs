@@ -1,4 +1,4 @@
-use iced::{Element, Renderer, Task, widget::container};
+use iced::{Element, Renderer, Task, widget::column};
 
 use crate::{
     event::Event,
@@ -7,7 +7,7 @@ use crate::{
         SearchCondition, SearchConditionGroup, SearchConditionGroupOperator,
         SearchConditionStatement,
     },
-    ui::theme::Theme,
+    ui::{theme::Theme, widgets::modal::modal_container},
 };
 
 pub mod handler;
@@ -41,7 +41,7 @@ impl AdvancedSearchModal {
     }
 
     pub fn view<'a>(&self, _theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
-        container("text").into()
+        modal_container(column![]).width(890.0).height(660.0).into()
     }
 }
 

@@ -1,6 +1,6 @@
 use iced::{
-    Element, Length, Padding, Renderer, Task,
-    widget::{column, container, row},
+    Element, Length, Renderer, Task,
+    widget::{column, row},
 };
 use tracing::instrument;
 
@@ -10,8 +10,11 @@ use crate::{
     tag::models::{Tag, TagGroup, TagGroupId, TagId},
     ui::{
         modals::manage_tags::widgets::{footer, header, tag_group_pane, tag_group_tags_pane},
-        theme::{Theme, catalog},
-        widgets::separator::{horizontal_separator, vertical_separator},
+        theme::Theme,
+        widgets::{
+            modal::modal_container,
+            separator::{horizontal_separator, vertical_separator},
+        },
     },
 };
 
@@ -130,7 +133,7 @@ impl ManageTagsModal {
                 .is_some_and(|selected_tag_group_id| tag.tag_group_id == selected_tag_group_id)
         });
 
-        container(column![
+        modal_container(column![
             header(theme, tag_groups),
             vertical_separator(),
             row![
@@ -150,9 +153,6 @@ impl ManageTagsModal {
         ])
         .width(890.0)
         .height(660.0)
-        // Offsets inner containers so they don't overlap modal container border.
-        .padding(Padding::from(1.0))
-        .style(catalog::container::modal)
         .into()
     }
 }

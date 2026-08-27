@@ -1,6 +1,6 @@
 use iced::{
-    Element, Length, Renderer,
-    widget::{center, container, opaque, stack},
+    Element, Length, Padding, Renderer,
+    widget::{Container, center, container, opaque, stack},
 };
 
 use crate::ui::theme::{
@@ -27,4 +27,16 @@ where
     }
 
     stack(elements).into()
+}
+
+pub fn modal_container<'a, Message>(
+    content: impl Into<Element<'a, Message, Theme, Renderer>>,
+) -> Container<'a, Message, Theme, Renderer>
+where
+    Message: Clone + 'a,
+{
+    container(content)
+        // Offsets inner containers so they don't overlap modal container border.
+        .padding(Padding::from(1.0))
+        .style(catalog::container::modal)
 }
