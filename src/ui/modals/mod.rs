@@ -13,11 +13,15 @@ use crate::{
     },
     track::models::{Track, TrackId},
     ui::{
-        modals::{manage_tags::ManageTagsModal, tag_tracks::TagTracksModal},
+        modals::{
+            advanced_search::AdvancedSearchModal, manage_tags::ManageTagsModal,
+            tag_tracks::TagTracksModal,
+        },
         theme::Theme,
     },
 };
 
+pub mod advanced_search;
 pub mod handler;
 pub mod manage_tags;
 pub mod tag_tracks;
@@ -25,6 +29,7 @@ pub mod tag_tracks;
 pub enum AppModal {
     ManageTags(ManageTagsModal),
     TagTracks(TagTracksModal),
+    AdvancedSearch(AdvancedSearchModal),
 }
 
 #[derive(Default)]
@@ -41,6 +46,7 @@ pub enum Message {
     CloseModal,
     ManageTagsModal(manage_tags::Message),
     TagTracksModal(tag_tracks::Message),
+    AdvancedSearchModal(advanced_search::Message),
 }
 
 pub enum Outcome {
@@ -98,6 +104,9 @@ impl ModalController {
                     playback_controller_status,
                 );
             }
+            Message::AdvancedSearchModal(message) => {
+                (task, outcomes) = self.handle_advanced_search_modal(message);
+            }
         }
 
         (task, outcomes)
@@ -126,6 +135,11 @@ impl ModalController {
                     .on_event(event, current_playback_owner)
                     .map(Message::TagTracksModal);
             }
+            AppModal::AdvancedSearch(advanced_search_modal) => {
+                task = advanced_search_modal
+                    .on_event(event)
+                    .map(Message::AdvancedSearchModal);
+            }
         }
 
         task
@@ -150,6 +164,11 @@ impl ModalController {
                 tag_tracks_modal
                     .view(theme, tracks, tags, tag_groups, track_tag_index)
                     .map(Message::TagTracksModal),
+            ),
+            AppModal::AdvancedSearch(advanced_search_modal) => Some(
+                advanced_search_modal
+                    .view(theme)
+                    .map(Message::AdvancedSearchModal),
             ),
         }
     }

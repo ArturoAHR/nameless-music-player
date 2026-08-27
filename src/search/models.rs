@@ -40,3 +40,12 @@ impl SearchConditionStatementKind {
         }
     }
 }
+
+impl SearchConditionStatement {
+    pub fn kind(&self) -> SearchConditionStatementKind {
+        match self {
+            Self::HasTag { tag_id: _ } => SearchConditionStatementKind::HasTag,
+            Self::DoesNotHaveTag { tag_id: _ } => SearchConditionStatementKind::DoesNotHaveTag,
+        }
+    }
+}
