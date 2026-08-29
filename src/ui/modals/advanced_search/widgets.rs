@@ -42,7 +42,7 @@ pub fn body<'a>(
         theme,
         criteria,
         tag_options,
-        vec![],
+        Arc::from([]),
     ))
     .height(372.0)
     .width(Length::Fill)
@@ -53,15 +53,25 @@ pub fn search_condition_group_form<'a>(
     theme: &Theme,
     search_condition_group: &SearchConditionGroup,
     tag_options: &'a [PickListOption<TagId>],
-    index_path: Vec<usize>,
+    index_path: Arc<[usize]>,
 ) -> Element<'a, Message, Theme, Renderer> {
-    let mut search_condition_group_control_row_elements = vec![
-        button(text("+ Condition")).into(),
-        button(text("+ Group")).into(),
+    let mut search_condition_group_control_row_elements: Vec<
+        Element<'a, Message, Theme, Renderer>,
+    > = vec![
+        button(text("+ Condition"))
+            .on_press(Message::AddCondition(Arc::clone(&index_path)))
+            .into(),
+        button(text("+ Group"))
+            .on_press(Message::AddSubgroup(Arc::clone(&index_path)))
+            .into(),
     ];
 
     if !index_path.is_empty() {
-        search_condition_group_control_row_elements.push(button(icon(icons::CLOSE)).into());
+        search_condition_group_control_row_elements.push(
+            button(icon(icons::CLOSE))
+                .on_press(Message::RemoveGroup(Arc::clone(&index_path)))
+                .into(),
+        );
     }
 
     let mut search_condition_group_form_rows =
@@ -95,14 +105,12 @@ pub fn search_condition_statement_form<'a>(
     theme: &Theme,
     search_condition_statement: &SearchConditionStatement,
     tag_options: &'a [PickListOption<TagId>],
-    index_path: Vec<usize>,
+    index_path: Arc<[usize]>,
 ) -> Element<'a, Message, Theme, Renderer> {
-    let index_path: Arc<[usize]> = Arc::from(index_path);
-
     let statement_form = match search_condition_statement {
         SearchConditionStatement::HasTag { tag_id }
         | SearchConditionStatement::DoesNotHaveTag { tag_id } => {
-            let index_path = index_path.clone();
+            let index_path = Arc::clone(&index_path);
 
             pick_list(
                 tag_options,
@@ -112,11 +120,14 @@ pub fn search_condition_statement_form<'a>(
                         .find(|tag_option| tag_option.value == tag_id)
                 }),
                 move |tag_option| {
-                    Message::SelectConditionStatementTag(tag_option.value, index_path.clone())
+                    Message::SelectConditionStatementTag(tag_option.value, Arc::clone(&index_path))
                 },
             )
         }
     };
+
+    let remove_button =
+        button(icon(icons::CLOSE)).on_press(Message::RemoveStatement(Arc::clone(&index_path)));
 
     container(row![
         pick_list(
@@ -125,11 +136,12 @@ pub fn search_condition_statement_form<'a>(
             move |search_condition_statement_kind| {
                 Message::SelectConditionStatement(
                     search_condition_statement_kind,
-                    index_path.clone(),
+                    Arc::clone(&index_path),
                 )
             },
         ),
-        statement_form
+        statement_form,
+        remove_button,
     ])
     .into()
 }
@@ -137,8 +149,12 @@ pub fn search_condition_statement_form<'a>(
 pub fn footer<'a>(theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
     container(right(
         row![
-            button("Cancel").style(catalog::button::modal_footer_button),
-            button("Search").style(catalog::button::modal_footer_button)
+            button("Cancel")
+                .on_press(Message::Close)
+                .style(catalog::button::modal_footer_button),
+            button("Search")
+                .on_press(Message::Search)
+                .style(catalog::button::modal_footer_button)
         ]
         .spacing(theme.sizes.space.md),
     ))

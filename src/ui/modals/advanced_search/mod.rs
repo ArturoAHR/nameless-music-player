@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use iced::{Element, Renderer, Task, widget::column};
 use itertools::Itertools;
+use tracing::warn;
 
 use crate::{
     event::Event,
@@ -45,7 +46,7 @@ pub enum Outcome {
 }
 
 // TODO: Move this struct to a more generic location
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PickListOption<T: PartialEq> {
     label: String,
     value: T,
@@ -87,10 +88,90 @@ impl AdvancedSearchModal {
     }
 
     pub fn update(&mut self, message: Message) -> (Task<Message>, Vec<Outcome>) {
-        (Task::none(), Vec::new())
+        let task = Task::none();
+        let mut outcomes = Vec::new();
+
+        match message {
+            Message::Close => {
+                outcomes.push(Outcome::Modal(ModalOutcome::CloseModal));
+            }
+            Message::Search => {
+                warn!("Search attempted.");
+            }
+            Message::AddCondition(index_path) if index_path.is_empty() => {
+                self.criteria.conditions.push(SearchCondition::Statement(
+                    SearchConditionStatement::HasTag { tag_id: None },
+                ));
+            }
+            Message::AddSubgroup(index_path) if index_path.is_empty() => {
+                self.criteria
+                    .conditions
+                    .push(SearchCondition::Group(SearchConditionGroup::default()));
+            }
+            Message::AddCondition(index_path)
+                if let Some(SearchCondition::Group(search_condition_group)) =
+                    self.criteria.get_mut(&index_path) =>
+            {
+                search_condition_group
+                    .conditions
+                    .push(SearchCondition::Statement(
+                        SearchConditionStatement::HasTag { tag_id: None },
+                    ));
+            }
+            Message::AddSubgroup(index_path)
+                if let Some(SearchCondition::Group(search_condition_group)) =
+                    self.criteria.get_mut(&index_path) =>
+            {
+                search_condition_group
+                    .conditions
+                    .push(SearchCondition::Group(SearchConditionGroup::default()));
+            }
+            Message::RemoveGroup(index_path) => {
+                let removed_group = self.criteria.remove(&index_path);
+
+                if removed_group.is_none() {
+                    warn!("Could not remove group at index path: {index_path:?}");
+                }
+            }
+            Message::RemoveStatement(index_path) => {
+                let removed_statement = self.criteria.remove(&index_path);
+
+                if removed_statement.is_none() {
+                    warn!("Could not remove statement at index path: {index_path:?}");
+                }
+            }
+            Message::SelectConditionStatement(search_condition_statement_kind, index_path)
+                if let Some(SearchCondition::Statement(search_condition_statement)) =
+                    self.criteria.get_mut(&index_path) =>
+            {
+                *search_condition_statement = search_condition_statement_kind.statement();
+            }
+            Message::SelectConditionStatementTag(selected_tag_id, index_path)
+                if let Some(SearchCondition::Statement(search_condition_statement)) =
+                    self.criteria.get_mut(&index_path) =>
+            {
+                match search_condition_statement {
+                    SearchConditionStatement::HasTag { tag_id }
+                    | SearchConditionStatement::DoesNotHaveTag { tag_id } => {
+                        *tag_id = Some(selected_tag_id);
+                    }
+                }
+            }
+            Message::SelectGroupOperator(search_condition_group_operator, index_path)
+                if let Some(SearchCondition::Group(search_condition_group)) =
+                    self.criteria.get_mut(&index_path) =>
+            {
+                search_condition_group.operator = search_condition_group_operator;
+            }
+            _ => {
+                warn!("Unsupported operation: {message:?}");
+            }
+        }
+
+        (task, outcomes)
     }
 
-    pub fn on_event(&mut self, event: &Event) -> Task<Message> {
+    pub fn on_event(&mut self, _event: &Event) -> Task<Message> {
         Task::none()
     }
 
