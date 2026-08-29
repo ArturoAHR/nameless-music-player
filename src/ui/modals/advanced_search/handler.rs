@@ -1,8 +1,15 @@
 use iced::Task;
 
-use crate::ui::modals::{
-    self, AppModal, ModalController,
-    advanced_search::{AdvancedSearchModal, Message, Outcome},
+use crate::{
+    search::models::{
+        SearchCondition, SearchConditionGroup, SearchConditionGroupOperator,
+        SearchConditionStatement,
+    },
+    tag::models::{Tag, TagGroup},
+    ui::modals::{
+        self, AppModal, ModalController,
+        advanced_search::{AdvancedSearchModal, Message, Outcome},
+    },
 };
 
 impl ModalController {
@@ -28,7 +35,16 @@ impl ModalController {
         (modal_task, outcomes)
     }
 
-    pub fn open_advanced_search_modal(&mut self) {
-        self.modal = Some(AppModal::AdvancedSearch(AdvancedSearchModal::default()));
+    pub fn open_advanced_search_modal(&mut self, tags: &[Tag], tag_groups: &[TagGroup]) {
+        self.modal = Some(AppModal::AdvancedSearch(AdvancedSearchModal::new(
+            SearchConditionGroup {
+                operator: SearchConditionGroupOperator::And,
+                conditions: vec![SearchCondition::Statement(
+                    SearchConditionStatement::HasTag { tag_id: None },
+                )],
+            },
+            tags,
+            tag_groups,
+        )));
     }
 }

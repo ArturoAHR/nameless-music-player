@@ -1,34 +1,42 @@
+use strum::VariantArray;
+
 use crate::tag::models::TagId;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct SearchConditionGroup {
     pub operator: SearchConditionGroupOperator,
     pub conditions: Vec<SearchCondition>,
 }
 
-#[derive(Debug, Default)]
+// TODO: Find a better place to introduce UI labels for the models
+#[derive(Debug, Default, Clone, strum::Display, VariantArray)]
 pub enum SearchConditionGroupOperator {
     #[default]
+    #[strum(to_string = "AND")]
     And,
+    #[strum(to_string = "OR")]
     Or,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SearchCondition {
     Statement(SearchConditionStatement),
     Group(SearchConditionGroup),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SearchConditionStatement {
     HasTag { tag_id: Option<TagId> },
     DoesNotHaveTag { tag_id: Option<TagId> },
 }
 
-#[derive(Debug, Default)]
+// TODO: Find a better place to introduce UI labels for the models
+#[derive(Debug, Default, Clone, PartialEq, Eq, strum::Display, VariantArray)]
 pub enum SearchConditionStatementKind {
     #[default]
+    #[strum(to_string = "Has tag")]
     HasTag,
+    #[strum(to_string = "Doesn't have tag")]
     DoesNotHaveTag,
 }
 

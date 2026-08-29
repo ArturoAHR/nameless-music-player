@@ -147,7 +147,7 @@ impl ModalController {
 
     #[instrument(skip_all, level = "debug")]
     pub fn view<'a>(
-        &self,
+        &'a self,
         theme: &Theme,
         tracks: &'a FxHashMap<TrackId, Track>,
         tags: &'a [Tag],
