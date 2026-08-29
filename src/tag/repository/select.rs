@@ -14,7 +14,7 @@ pub async fn get_tags(pool: SqlitePool) -> Result<Vec<Tag>, AppError> {
         .column((TagIden::Table, Asterisk))
         .from(TagIden::Table)
         .join(
-            JoinType::RightJoin,
+            JoinType::InnerJoin,
             TagGroupIden::Table,
             Expr::col((TagIden::Table, TagIden::TagGroupId))
                 .equals((TagGroupIden::Table, TagGroupIden::Id)),
@@ -48,8 +48,15 @@ pub async fn get_tag_groups(pool: SqlitePool) -> Result<Vec<TagGroup>, AppError>
 #[instrument(skip(pool))]
 pub async fn get_track_tags(pool: SqlitePool) -> Result<Vec<TrackTag>, AppError> {
     let (sql, values) = Query::select()
-        .column(Asterisk)
+        .column((TrackTagIden::Table, Asterisk))
         .from(TrackTagIden::Table)
+        .join(
+            JoinType::InnerJoin,
+            TagIden::Table,
+            Expr::col((TrackTagIden::Table, TrackTagIden::TagId))
+                .equals((TagIden::Table, TagIden::Id)),
+        )
+        .and_where(Expr::col((TagIden::Table, TagIden::DeletedAt)).is_null())
         .build_sqlx(SqliteQueryBuilder);
 
     let track_tags = sqlx::query_as_with::<_, TrackTag, _>(&sql, values)
