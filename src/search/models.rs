@@ -88,6 +88,22 @@ impl SearchConditionGroup {
             SearchCondition::Statement(_) => None,
         }
     }
+
+    pub fn remove(&mut self, index_path: &[usize]) -> Option<SearchCondition> {
+        let [index, index_path @ ..] = index_path else {
+            return None;
+        };
+
+        if index_path.is_empty() && *index < self.conditions.len() {
+            return Some(self.conditions.remove(*index));
+        }
+
+        let condition = self.conditions.get_mut(*index)?;
+        match condition {
+            SearchCondition::Group(group) => group.remove(index_path),
+            SearchCondition::Statement(_) => None,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -397,5 +413,141 @@ mod tests {
         };
 
         assert_matches!(search_condition_group.get_mut(&[]), None);
+    }
+
+    #[test]
+    fn should_remove_statement() {
+        let mut search_condition_group = SearchConditionGroup {
+            operator: SearchConditionGroupOperator::And,
+            conditions: vec![SearchCondition::Statement(
+                SearchConditionStatement::HasTag { tag_id: None },
+            )],
+        };
+
+        assert_matches!(
+            search_condition_group.remove(&[0]).unwrap(),
+            SearchCondition::Statement(SearchConditionStatement::HasTag { tag_id: None })
+        );
+
+        assert_matches!(search_condition_group.get(&[0]), None);
+    }
+
+    #[test]
+    fn should_remove_group() {
+        let mut search_condition_group = SearchConditionGroup {
+            operator: SearchConditionGroupOperator::And,
+            conditions: vec![SearchCondition::Group(SearchConditionGroup {
+                operator: SearchConditionGroupOperator::And,
+                conditions: vec![],
+            })],
+        };
+
+        assert_matches!(
+            search_condition_group.remove(&[0]).unwrap(),
+            SearchCondition::Group(SearchConditionGroup { operator: SearchConditionGroupOperator::And, conditions }) if conditions.is_empty()
+        );
+
+        assert_matches!(search_condition_group.get(&[0]), None);
+    }
+
+    #[test]
+    fn should_remove_nested_statement() {
+        let mut search_condition_group = SearchConditionGroup {
+            operator: SearchConditionGroupOperator::And,
+            conditions: vec![SearchCondition::Group(SearchConditionGroup {
+                operator: SearchConditionGroupOperator::And,
+                conditions: vec![SearchCondition::Statement(
+                    SearchConditionStatement::HasTag { tag_id: None },
+                )],
+            })],
+        };
+
+        assert_matches!(
+            search_condition_group.remove(&[0, 0]).unwrap(),
+            SearchCondition::Statement(SearchConditionStatement::HasTag { tag_id: None })
+        );
+
+        assert_matches!(search_condition_group.get(&[0, 0]), None);
+    }
+
+    #[test]
+    fn should_remove_nested_group() {
+        let mut search_condition_group = SearchConditionGroup {
+            operator: SearchConditionGroupOperator::And,
+            conditions: vec![
+                SearchCondition::Statement(SearchConditionStatement::HasTag { tag_id: None }),
+                SearchCondition::Group(SearchConditionGroup {
+                    operator: SearchConditionGroupOperator::And,
+                    conditions: vec![SearchCondition::Group(SearchConditionGroup {
+                        operator: SearchConditionGroupOperator::And,
+                        conditions: vec![SearchCondition::Statement(
+                            SearchConditionStatement::HasTag { tag_id: None },
+                        )],
+                    })],
+                }),
+            ],
+        };
+
+        assert_matches!(
+            search_condition_group.remove(&[1, 0]).unwrap(),
+            SearchCondition::Group(SearchConditionGroup { operator: SearchConditionGroupOperator::And, conditions })
+                if conditions.len() == 1
+        );
+
+        assert_matches!(search_condition_group.get(&[1, 0]), None);
+    }
+
+    #[test]
+    fn should_not_remove_non_existent_value() {
+        let mut search_condition_group = SearchConditionGroup {
+            operator: SearchConditionGroupOperator::And,
+            conditions: vec![
+                SearchCondition::Statement(SearchConditionStatement::HasTag { tag_id: None }),
+                SearchCondition::Group(SearchConditionGroup {
+                    operator: SearchConditionGroupOperator::And,
+                    conditions: vec![SearchCondition::Group(SearchConditionGroup {
+                        operator: SearchConditionGroupOperator::And,
+                        conditions: vec![SearchCondition::Statement(
+                            SearchConditionStatement::HasTag { tag_id: None },
+                        )],
+                    })],
+                }),
+            ],
+        };
+
+        assert_matches!(search_condition_group.remove(&[2]), None);
+    }
+
+    #[test]
+    fn should_not_remove_non_existent_nested_value() {
+        let mut search_condition_group = SearchConditionGroup {
+            operator: SearchConditionGroupOperator::And,
+            conditions: vec![
+                SearchCondition::Statement(SearchConditionStatement::HasTag { tag_id: None }),
+                SearchCondition::Group(SearchConditionGroup {
+                    operator: SearchConditionGroupOperator::And,
+                    conditions: vec![SearchCondition::Group(SearchConditionGroup {
+                        operator: SearchConditionGroupOperator::And,
+                        conditions: vec![SearchCondition::Statement(
+                            SearchConditionStatement::HasTag { tag_id: None },
+                        )],
+                    })],
+                }),
+            ],
+        };
+
+        assert_matches!(search_condition_group.remove(&[0, 0]), None);
+    }
+
+    #[test]
+    fn should_not_remove_value_with_empty_index_path() {
+        let mut search_condition_group = SearchConditionGroup {
+            operator: SearchConditionGroupOperator::And,
+            conditions: vec![SearchCondition::Statement(
+                SearchConditionStatement::HasTag { tag_id: None },
+            )],
+        };
+
+        assert_matches!(search_condition_group.remove(&[]), None);
     }
 }
