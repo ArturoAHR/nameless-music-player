@@ -1,4 +1,4 @@
-use sea_query::{Asterisk, Expr, ExprTrait, JoinType, Query, SqliteQueryBuilder};
+use sea_query::{Asterisk, Expr, ExprTrait, JoinType, Order, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
 use tracing::instrument;
@@ -21,6 +21,8 @@ pub async fn get_tags(pool: SqlitePool) -> Result<Vec<Tag>, AppError> {
         )
         .and_where(Expr::col((TagIden::Table, TagIden::DeletedAt)).is_null())
         .and_where(Expr::col((TagGroupIden::Table, TagGroupIden::DeletedAt)).is_null())
+        .order_by((TagGroupIden::Table, TagGroupIden::Name), Order::Asc)
+        .order_by((TagIden::Table, TagIden::Name), Order::Asc)
         .build_sqlx(SqliteQueryBuilder);
 
     let tags = sqlx::query_as_with::<_, Tag, _>(&sql, values)
@@ -36,6 +38,7 @@ pub async fn get_tag_groups(pool: SqlitePool) -> Result<Vec<TagGroup>, AppError>
         .column(Asterisk)
         .from(TagGroupIden::Table)
         .and_where(Expr::col(TagGroupIden::DeletedAt).is_null())
+        .order_by(TagGroupIden::Name, Order::Asc)
         .build_sqlx(SqliteQueryBuilder);
 
     let tag_groups = sqlx::query_as_with::<_, TagGroup, _>(&sql, values)
