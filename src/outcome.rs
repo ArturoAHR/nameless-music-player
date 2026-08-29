@@ -30,6 +30,7 @@ pub enum ModalOutcome {
     CloseModal,
     OpenTagTracksModal(Vec<TrackId>),
     OpenManageTagsModal,
+    OpenAdvancedSearchModal,
 }
 
 #[derive(Debug, Clone)]
@@ -211,6 +212,10 @@ impl App {
             }
             ModalOutcome::OpenManageTagsModal => {
                 self.modal_controller.open_manage_tags_modal();
+            }
+            ModalOutcome::OpenAdvancedSearchModal => {
+                self.modal_controller
+                    .open_advanced_search_modal(&self.tags, &self.tag_groups);
             }
         }
 

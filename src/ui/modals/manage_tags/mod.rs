@@ -55,8 +55,8 @@ impl ManageTagsModal {
     }
 
     #[instrument(
-        skip(self, tags, tag_groups)
-        fields( tags_len = tags.len(), tag_groups_len = tag_groups.len()),
+        skip(self, tags, tag_groups),
+        fields(tags_len = tags.len(), tag_groups_len = tag_groups.len()),
         level = "debug"
     )]
     pub fn update(

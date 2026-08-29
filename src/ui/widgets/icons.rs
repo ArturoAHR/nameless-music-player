@@ -28,6 +28,7 @@ pub const CHEVRON_UP: char = '\u{E80E}';
 pub const CHEVRON_DOWN: char = '\u{E80F}';
 pub const TAG: char = '\u{E812}';
 pub const MUSICAL_NOTE: char = '\u{E811}';
+pub const SEARCH: char = '\u{E000}';
 
 pub fn icon<'a>(codepoint: char) -> Text<'a, Theme, Renderer> {
     const ICON_FONT: Font = Font::with_name("music-player-icons");

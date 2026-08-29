@@ -56,11 +56,7 @@ pub enum Outcome {
 }
 
 impl ModalController {
-    #[instrument(
-        skip(self, tracks, tags, tag_groups)
-        fields(tracks_len = tracks.len(), tags_len = tags.len(), tag_groups_len = tag_groups.len()),
-        level = "debug"
-    )]
+    #[instrument(skip_all, level = "debug")]
     pub fn update(
         &mut self,
         message: Message,
