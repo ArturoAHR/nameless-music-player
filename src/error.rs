@@ -10,6 +10,7 @@ use crate::{
         controller::PlaybackControllerError, pipeline::AudioPipelineError,
         queue::PlaybackQueueError,
     },
+    search::SearchError,
     track::file::TrackPropertiesReadError,
 };
 
@@ -37,6 +38,9 @@ pub enum AppError {
 
     #[error("playlist not found: {name}")]
     PlaylistNotFound { name: String },
+
+    #[error("search error - {0}")]
+    Search(#[from] SearchError),
 
     #[error("io error - {0}")]
     Io(Arc<std::io::Error>),

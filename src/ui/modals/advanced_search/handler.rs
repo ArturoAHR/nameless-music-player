@@ -29,6 +29,7 @@ impl ModalController {
             .into_iter()
             .map(|outcome| match outcome {
                 Outcome::Modal(outcome) => modals::Outcome::Modal(outcome),
+                Outcome::TrackList(outcome) => modals::Outcome::TrackList(outcome),
             })
             .collect();
 

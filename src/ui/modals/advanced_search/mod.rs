@@ -6,7 +6,7 @@ use tracing::warn;
 
 use crate::{
     event::Event,
-    outcome::ModalOutcome,
+    outcome::{ModalOutcome, TrackListOutcome},
     search::models::{
         SearchCondition, SearchConditionGroup, SearchConditionGroupOperator,
         SearchConditionStatement, SearchConditionStatementKind,
@@ -43,6 +43,7 @@ pub enum Message {
 
 pub enum Outcome {
     Modal(ModalOutcome),
+    TrackList(TrackListOutcome),
 }
 
 // TODO: Move this struct to a more generic location
@@ -96,7 +97,9 @@ impl AdvancedSearchModal {
                 outcomes.push(Outcome::Modal(ModalOutcome::CloseModal));
             }
             Message::Search => {
-                warn!("Search attempted.");
+                outcomes.push(Outcome::TrackList(TrackListOutcome::AdvancedSearch(
+                    self.criteria.clone(),
+                )));
             }
             Message::AddCondition(index_path) if index_path.is_empty() => {
                 self.criteria.conditions.push(SearchCondition::Statement(

@@ -45,6 +45,7 @@ impl App {
                 Outcome::Playback(outcome) => app::Outcome::Playback(outcome),
                 Outcome::Modal(outcome) => app::Outcome::Modal(outcome),
                 Outcome::Tag(outcome) => app::Outcome::Tag(outcome),
+                Outcome::TrackList(outcome) => app::Outcome::TrackList(outcome),
             };
 
             let outcome_task = self.handle_outcome(outcome);

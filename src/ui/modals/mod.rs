@@ -5,7 +5,7 @@ use tracing::instrument;
 use crate::{
     app::{self, PlaybackOwner},
     event::Event,
-    outcome::{ModalOutcome, PlaybackOutcome, TagOutcome},
+    outcome::{ModalOutcome, PlaybackOutcome, TagOutcome, TrackListOutcome},
     playback::controller::PlaybackControllerStatus,
     tag::{
         index::TrackTagIndex,
@@ -53,6 +53,7 @@ pub enum Outcome {
     Playback(PlaybackOutcome),
     Modal(ModalOutcome),
     Tag(TagOutcome),
+    TrackList(TrackListOutcome),
 }
 
 impl ModalController {
