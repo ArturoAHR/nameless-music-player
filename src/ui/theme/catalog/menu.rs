@@ -1,13 +1,9 @@
 use iced::{
-    Border, Color, Shadow, Vector,
-    border::Radius,
+    Border, Shadow,
     widget::overlay::menu::{Catalog, Style},
 };
 
-use crate::ui::theme::{
-    Theme,
-    color::{mix, with_alpha},
-};
+use crate::ui::theme::Theme;
 
 pub type StyleFn<'a> = Box<dyn Fn(&Theme) -> Style + 'a>;
 
