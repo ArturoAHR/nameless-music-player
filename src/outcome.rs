@@ -326,6 +326,8 @@ impl App {
                     .into_iter()
                     .collect();
 
+                self.sort_displayed_tracks();
+
                 self.track_list = TrackList::AdvancedSearch;
 
                 if self.modal_controller.is_modal_active() {

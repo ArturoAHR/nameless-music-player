@@ -1,5 +1,4 @@
 use iced::{Element, Renderer, Task};
-use itertools::Itertools;
 
 use crate::{
     app::{self, App, TrackList},
@@ -59,18 +58,9 @@ impl App {
     pub fn display_main_library_tracks(&mut self) {
         self.track_list = TrackList::MainLibrary;
 
-        self.displayed_track_ids = self
-            .tracks
-            .iter()
-            .sorted_by_cached_key(|(_track_id, track)| {
-                (
-                    track.artist.as_deref().unwrap_or("Unknown").to_lowercase(),
-                    track.title.as_deref().unwrap_or("Untitled").to_lowercase(),
-                )
-            })
-            .map(|(track_id, _track)| track_id)
-            .copied()
-            .collect();
+        self.displayed_track_ids = self.tracks.keys().copied().collect();
+
+        self.sort_displayed_tracks();
     }
 
     pub fn display_tag_tracks(&mut self, tag_id: TagId) {
@@ -78,6 +68,21 @@ impl App {
             self.track_list = TrackList::Tag(tag_id);
 
             self.displayed_track_ids = tag_track_ids.iter().copied().collect();
+
+            self.sort_displayed_tracks();
         }
+    }
+
+    pub fn sort_displayed_tracks(&mut self) {
+        self.displayed_track_ids.sort_unstable_by_key(|id| {
+            let Some(track) = self.tracks.get(id) else {
+                return ("unknown".to_owned(), "untitled".to_owned());
+            };
+
+            (
+                track.artist.as_deref().unwrap_or("unknown").to_lowercase(),
+                track.title.as_deref().unwrap_or("untitled").to_lowercase(),
+            )
+        });
     }
 }
