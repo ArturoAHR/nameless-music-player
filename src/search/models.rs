@@ -9,7 +9,7 @@ pub struct SearchConditionGroup {
 }
 
 // TODO: Find a better place to introduce UI labels for the models
-#[derive(Debug, Default, Clone, strum::Display, VariantArray)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, strum::Display, VariantArray)]
 pub enum SearchConditionGroupOperator {
     #[default]
     #[strum(to_string = "AND")]

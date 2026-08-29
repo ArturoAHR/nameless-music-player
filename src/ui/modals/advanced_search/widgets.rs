@@ -8,8 +8,8 @@ use strum::VariantArray;
 
 use crate::{
     search::models::{
-        SearchCondition, SearchConditionGroup, SearchConditionStatement,
-        SearchConditionStatementKind,
+        SearchCondition, SearchConditionGroup, SearchConditionGroupOperator,
+        SearchConditionStatement, SearchConditionStatementKind,
     },
     tag::models::TagId,
     ui::{
@@ -55,9 +55,26 @@ pub fn search_condition_group_form<'a>(
     tag_options: &'a [PickListOption<TagId>],
     index_path: Arc<[usize]>,
 ) -> Element<'a, Message, Theme, Renderer> {
+    let search_condition_group_operator_pick_list = {
+        let index_path = Arc::clone(&index_path);
+
+        pick_list(
+            SearchConditionGroupOperator::VARIANTS,
+            Some(search_condition_group.operator),
+            move |search_condition_group_operator| {
+                Message::SelectGroupOperator(
+                    search_condition_group_operator,
+                    Arc::clone(&index_path),
+                )
+            },
+        )
+        .into()
+    };
+
     let mut search_condition_group_control_row_elements: Vec<
         Element<'a, Message, Theme, Renderer>,
     > = vec![
+        search_condition_group_operator_pick_list,
         button(text("+ Condition"))
             .on_press(Message::AddCondition(Arc::clone(&index_path)))
             .into(),

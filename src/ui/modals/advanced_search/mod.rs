@@ -111,6 +111,7 @@ impl AdvancedSearchModal {
                     .conditions
                     .push(SearchCondition::Group(SearchConditionGroup::default()));
             }
+
             Message::AddCondition(index_path)
                 if let Some(SearchCondition::Group(search_condition_group)) =
                     self.criteria.get_mut(&index_path) =>
@@ -159,6 +160,11 @@ impl AdvancedSearchModal {
                         *tag_id = Some(selected_tag_id);
                     }
                 }
+            }
+            Message::SelectGroupOperator(search_condition_group_operator, index_path)
+                if index_path.is_empty() =>
+            {
+                self.criteria.operator = search_condition_group_operator;
             }
             Message::SelectGroupOperator(search_condition_group_operator, index_path)
                 if let Some(SearchCondition::Group(search_condition_group)) =
