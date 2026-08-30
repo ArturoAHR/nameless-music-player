@@ -192,8 +192,8 @@ impl AdvancedSearchModal {
             vertical_separator(),
             footer(theme)
         ])
-        .width(500.0)
         .height(600.0)
+        .width(750.0)
         .into()
     }
 }

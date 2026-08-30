@@ -1,7 +1,7 @@
 use std::{iter::once, sync::Arc};
 
 use iced::{
-    Element, Length, Renderer,
+    Element, Length, Renderer, alignment,
     widget::{Space, button, column, container, pick_list, right, row, text},
 };
 use strum::VariantArray;
@@ -20,16 +20,19 @@ use crate::{
 };
 
 pub fn header<'a>(theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
-    container(row![
-        text("Advanced search"),
-        Space::new().width(Length::Fill),
-        button(icon(icons::CLOSE))
-            .on_press(Message::Close)
-            .style(catalog::button::clear_icon_button)
-    ])
-    .padding([theme.sizes.space.xxxl, theme.sizes.space.xxl])
-    .height(60.0)
+    container(
+        row![
+            text("Advanced search").size(theme.sizes.font.h2),
+            Space::new().width(Length::Fill),
+            button(icon(icons::CLOSE))
+                .on_press(Message::Close)
+                .style(catalog::button::clear_icon_button)
+        ]
+        .align_y(alignment::Vertical::Center),
+    )
+    .padding([theme.sizes.space.xl, theme.sizes.space.xxl])
     .width(Length::Fill)
+    .style(catalog::container::modal_header)
     .into()
 }
 
@@ -44,7 +47,7 @@ pub fn body<'a>(
         tag_options,
         Arc::from([]),
     ))
-    .height(372.0)
+    .height(Length::Fill)
     .width(Length::Fill)
     .into()
 }
