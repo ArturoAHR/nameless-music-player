@@ -17,6 +17,7 @@ impl App {
             .view(
                 &self.theme,
                 &self.tracks,
+                &self.tags,
                 &self.displayed_track_ids,
                 self.playback_bar.playing_track_id.as_ref(),
             )

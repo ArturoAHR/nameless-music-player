@@ -1,6 +1,6 @@
 use iced::{
     Element, Length, Renderer, Task, alignment,
-    widget::{Space, column, container, text},
+    widget::{Space, column, container, opaque, text},
 };
 use iced_aw::ContextMenu;
 use iced_palace::widget::ellipsized_text;
@@ -10,6 +10,7 @@ use tracing::instrument;
 use crate::{
     event::Event,
     outcome::{ModalOutcome, PlaybackOutcome},
+    tag::models::Tag,
     track::models::{Track, TrackId},
     ui::{
         theme::{Theme, catalog},
@@ -113,6 +114,7 @@ impl MainPane {
         &'a self,
         _theme: &'a Theme,
         tracks: &'a FxHashMap<TrackId, Track>,
+        tags: &'a [Tag],
         displayed_track_ids: &Vec<TrackId>,
         playing_track_id: Option<&TrackId>,
     ) -> Element<'a, Message, Theme, Renderer> {
@@ -178,17 +180,21 @@ impl MainPane {
                 if self.selected_track_ids.is_empty() {
                     Space::new().into()
                 } else {
-                    container(
-                        column![
-                            menu_option("Queue Next", Some(Message::QueueNext)),
-                            menu_option("Tag Selection", Some(Message::TagSelection))
-                        ]
-                        .width(Length::Fill),
+                    opaque(
+                        container(
+                            column![
+                                menu_option("Queue Next", Some(Message::QueueNext)),
+                                menu_option(
+                                    "Tag Selection",
+                                    (!tags.is_empty()).then_some(Message::TagSelection)
+                                )
+                            ]
+                            .width(Length::Fill),
+                        )
+                        .width(180.0)
+                        .padding(6.0)
+                        .style(catalog::container::context_menu),
                     )
-                    .width(180.0)
-                    .padding(6.0)
-                    .style(catalog::container::context_menu)
-                    .into()
                 }
             },
         ))
