@@ -20,19 +20,13 @@ impl Catalog for Theme {
     }
 }
 
-pub fn default(theme: &Theme, status: Status) -> Style {
-    let mut radius = Radius::from(theme.sizes.border.radius_md);
-
-    if matches!(status, Status::Opened { is_hovered: _ }) {
-        radius = radius.bottom(0.0);
-    }
-
+pub fn default(theme: &Theme, _status: Status) -> Style {
     Style {
         background: theme.palette.surface_sunken.into(),
         border: Border {
             color: theme.palette.border,
             width: 1.0,
-            radius,
+            radius: Radius::from(theme.sizes.border.radius_md),
         },
         handle_color: theme.palette.border,
         placeholder_color: theme.palette.text_muted,

@@ -17,7 +17,7 @@ impl Catalog for Theme {
             border: Border {
                 color: theme.palette.border,
                 width: 1.0,
-                radius: Radius::from(theme.sizes.border.radius_md).top(0.0),
+                radius: Radius::from(theme.sizes.border.radius_md),
             },
             selected_background: theme.palette.selected.into(),
             selected_text_color: theme.palette.text_selected,
