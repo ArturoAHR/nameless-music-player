@@ -142,6 +142,8 @@ pub fn read_track_properties(path: &Path) -> Result<TrackProperties, TrackProper
         ..TrackProperties::default()
     };
 
+    extract_track_artist_and_title_from_file_name(&mut track_properties, path);
+
     let mut revision_tags: Vec<(MetadataId, Vec<Tag>)> = Vec::new();
 
     // Extract Revision Tags here since cloning the whole Metadata Revision is expensive (it may have images)
@@ -182,6 +184,24 @@ pub fn read_track_properties(path: &Path) -> Result<TrackProperties, TrackProper
     }
 
     Ok(track_properties)
+}
+
+#[instrument(skip_all)]
+fn extract_track_artist_and_title_from_file_name(
+    track_properties: &mut TrackProperties,
+    path: &Path,
+) {
+    if let Some(file_name) = path.file_name().and_then(OsStr::to_str)
+        // Guaranteed to succeed since we reject tracks without an extension.
+        && let Some((file_name, _file_format)) = file_name.rsplit_once('.')
+    {
+        if let Some((artist, title)) = file_name.split_once(" - ") {
+            track_properties.title = Some(title.to_owned());
+            track_properties.artist = Some(artist.to_owned());
+        } else {
+            track_properties.title = Some(file_name.to_owned());
+        }
+    }
 }
 
 #[instrument(skip_all, fields(tag_count = tags.len()))]
