@@ -1,12 +1,14 @@
 use iced::{
     Element, Length, Renderer, Task, alignment,
-    widget::{container, text},
+    widget::{container, row, text},
 };
+use iced_palace::widget::ellipsized_text;
 use tracing::instrument;
 
 use crate::{
     app::AppStatus,
     event::Event,
+    track::models::TrackId,
     ui::theme::{Theme, catalog},
 };
 
@@ -38,6 +40,7 @@ impl StatusBar {
     pub fn view<'a>(
         &'a self,
         theme: &Theme,
+        displayed_track_ids: &[TrackId],
         status: &AppStatus,
     ) -> Element<'a, Message, Theme, Renderer> {
         let status_label = match status {
@@ -46,10 +49,22 @@ impl StatusBar {
             AppStatus::FinishedAddingTracks => "Finished adding tracks",
         };
 
+        let displayed_track_list_label = format!("{} tracks", displayed_track_ids.len());
+
         container(
-            text(status_label)
-                .size(theme.sizes.font.body)
-                .color(theme.palette.text_muted),
+            row![
+                container(
+                    ellipsized_text(status_label)
+                        .size(theme.sizes.font.body)
+                        .color(theme.palette.text_muted),
+                )
+                .width(Length::Fill),
+                text(displayed_track_list_label)
+                    .size(theme.sizes.font.body)
+                    .color(theme.palette.text_muted),
+            ]
+            .height(Length::Fill)
+            .width(Length::Fill),
         )
         .height(Length::Fixed(theme.sizes.component.status_bar_height))
         .width(Length::Fill)
