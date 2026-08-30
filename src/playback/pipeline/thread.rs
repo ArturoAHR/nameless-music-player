@@ -12,8 +12,11 @@ use crate::{
     playback::{
         controller::GenerationCounter,
         pipeline::{
-            AudioFormat, AudioPipelineError, AudioPipelineStatus, builder::AudioPipelineBuilder,
-            command::CommandReceiver, event::EventSender, stage::decoder::AudioDecoderError,
+            AudioFormat, AudioPipelineError, AudioPipelineStatus,
+            builder::AudioPipelineBuilder,
+            command::{AudioPipelineCommandReceiverError, CommandReceiver},
+            event::EventSender,
+            stage::decoder::AudioDecoderError,
         },
     },
     track::models::{Track, TrackId},
@@ -141,6 +144,18 @@ fn audio_pipeline_thread_process(
             }
             Err(AudioPipelineError::Decoder(AudioDecoderError::RecoverableDecoderError(error))) => {
                 warn!("Recoverable audio pipeline error: {error}");
+            }
+            Err(AudioPipelineError::AudioPipelineCommandReceiver(
+                AudioPipelineCommandReceiverError::ReceiveAttemptFailed(
+                    std::sync::mpsc::TryRecvError::Disconnected,
+                )
+                | AudioPipelineCommandReceiverError::ReceiveFailed(std::sync::mpsc::RecvError),
+            )) => {
+                error!(
+                    "Audio pipeline command receiver has been disconnected, exiting pipeline thread"
+                );
+
+                break;
             }
             Err(error) => {
                 let track =

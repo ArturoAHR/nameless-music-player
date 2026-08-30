@@ -1,7 +1,4 @@
-use iced::{
-    Element, Length, Padding, Renderer, Task, keyboard,
-    widget::{column, container},
-};
+use iced::{Element, Length, Renderer, Task, keyboard, widget::column};
 use rustc_hash::FxHashMap;
 use tracing::{debug, instrument};
 
@@ -20,8 +17,8 @@ use crate::{
             tag::{get_tag_group_tags, get_tag_index},
             widgets::{footer, header, playback, tag_group_list, tag_list},
         },
-        theme::{Theme, catalog},
-        widgets::separator::vertical_separator,
+        theme::Theme,
+        widgets::{modal::modal_container, separator::vertical_separator},
     },
 };
 
@@ -510,7 +507,7 @@ impl TagTracksModal {
             track_tag_index.get_track_tags(*current_tagging_track_id)
         });
 
-        container(
+        modal_container(
             column![
                 header(theme, track, track_number, track_total),
                 vertical_separator(),
@@ -547,9 +544,6 @@ impl TagTracksModal {
         )
         .width(width)
         .height(Length::Shrink)
-        // Offsets inner containers so they don't overlap modal container border.
-        .padding(Padding::from(1.0))
-        .style(catalog::container::modal)
         .into()
     }
 }

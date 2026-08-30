@@ -2,6 +2,10 @@
 
 - Add trait for Components that implements Component Context View/Event/Update struct pattern with associated types.
 
+## Modals
+
+- Add trait for Modals that implements Component plus functions and types needed for the life cycle of modals.
+
 ## Custom Table Widget
 
 - Add click event reporting with `TableArea` to determine what `ContextMenu` component should render on right click.

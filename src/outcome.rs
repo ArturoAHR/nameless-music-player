@@ -6,6 +6,7 @@ use crate::{
     app::{App, Message, PlaybackOwner, TrackList},
     error::AppError,
     playback::{controller::PlaybackControllerStatus, queue::entry::PlaybackQueueEntryId},
+    search::{models::SearchConditionGroup, search},
     tag::{
         models::{TagGroupId, TagId},
         repository::{
@@ -30,6 +31,7 @@ pub enum ModalOutcome {
     CloseModal,
     OpenTagTracksModal(Vec<TrackId>),
     OpenManageTagsModal,
+    OpenAdvancedSearchModal,
 }
 
 #[derive(Debug, Clone)]
@@ -65,7 +67,7 @@ pub enum TrackListOutcome {
     DisplayMainLibraryTrackList,
     DisplayTagTrackList(TagId),
     // Search(criteria)
-    // AdvancedSearch(criteria)
+    AdvancedSearch(SearchConditionGroup),
 }
 
 impl App {
@@ -212,6 +214,10 @@ impl App {
             ModalOutcome::OpenManageTagsModal => {
                 self.modal_controller.open_manage_tags_modal();
             }
+            ModalOutcome::OpenAdvancedSearchModal => {
+                self.modal_controller
+                    .open_advanced_search_modal(&self.tags, &self.tag_groups);
+            }
         }
 
         Ok(task)
@@ -306,7 +312,7 @@ impl App {
         &mut self,
         outcome: TrackListOutcome,
     ) -> Result<Task<Message>, AppError> {
-        let task = Task::none();
+        let mut task = Task::none();
 
         match outcome {
             TrackListOutcome::DisplayMainLibraryTrackList => {
@@ -314,6 +320,19 @@ impl App {
             }
             TrackListOutcome::DisplayTagTrackList(tag_id) => {
                 self.display_tag_tracks(tag_id);
+            }
+            TrackListOutcome::AdvancedSearch(criteria) => {
+                self.displayed_track_ids = search(&self.tracks, &self.track_tag_index, criteria)?
+                    .into_iter()
+                    .collect();
+
+                self.sort_displayed_tracks();
+
+                self.track_list = TrackList::AdvancedSearch;
+
+                if self.modal_controller.is_modal_active() {
+                    task = self.modal_controller.close_modal();
+                }
             }
         }
 

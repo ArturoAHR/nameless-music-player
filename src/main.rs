@@ -1,3 +1,8 @@
+#[cfg(feature = "hot-reload")]
+extern crate self as soundlore_lib;
+#[cfg(feature = "hot-reload")]
+include!("lib.rs");
+
 use std::process::exit;
 
 use iced::{Size, window};

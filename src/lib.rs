@@ -9,11 +9,12 @@ pub mod library;
 pub mod log;
 pub mod outcome;
 pub mod playback;
+pub mod search;
 pub mod subscriptions;
+pub mod tag;
 pub mod track;
 pub mod traits;
 pub mod ui;
-pub mod tag;
 
 #[cfg(any(test, feature = "testing"))]
 pub mod test;

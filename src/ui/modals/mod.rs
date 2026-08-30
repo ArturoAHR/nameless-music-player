@@ -5,7 +5,7 @@ use tracing::instrument;
 use crate::{
     app::{self, PlaybackOwner},
     event::Event,
-    outcome::{ModalOutcome, PlaybackOutcome, TagOutcome},
+    outcome::{ModalOutcome, PlaybackOutcome, TagOutcome, TrackListOutcome},
     playback::controller::PlaybackControllerStatus,
     tag::{
         index::TrackTagIndex,
@@ -13,11 +13,15 @@ use crate::{
     },
     track::models::{Track, TrackId},
     ui::{
-        modals::{manage_tags::ManageTagsModal, tag_tracks::TagTracksModal},
+        modals::{
+            advanced_search::AdvancedSearchModal, manage_tags::ManageTagsModal,
+            tag_tracks::TagTracksModal,
+        },
         theme::Theme,
     },
 };
 
+pub mod advanced_search;
 pub mod handler;
 pub mod manage_tags;
 pub mod tag_tracks;
@@ -25,6 +29,7 @@ pub mod tag_tracks;
 pub enum AppModal {
     ManageTags(ManageTagsModal),
     TagTracks(TagTracksModal),
+    AdvancedSearch(AdvancedSearchModal),
 }
 
 #[derive(Default)]
@@ -41,20 +46,18 @@ pub enum Message {
     CloseModal,
     ManageTagsModal(manage_tags::Message),
     TagTracksModal(tag_tracks::Message),
+    AdvancedSearchModal(advanced_search::Message),
 }
 
 pub enum Outcome {
     Playback(PlaybackOutcome),
     Modal(ModalOutcome),
     Tag(TagOutcome),
+    TrackList(TrackListOutcome),
 }
 
 impl ModalController {
-    #[instrument(
-        skip(self, tracks, tags, tag_groups)
-        fields(tracks_len = tracks.len(), tags_len = tags.len(), tag_groups_len = tag_groups.len()),
-        level = "debug"
-    )]
+    #[instrument(skip_all, level = "debug")]
     pub fn update(
         &mut self,
         message: Message,
@@ -98,6 +101,9 @@ impl ModalController {
                     playback_controller_status,
                 );
             }
+            Message::AdvancedSearchModal(message) => {
+                (task, outcomes) = self.handle_advanced_search_modal(message);
+            }
         }
 
         (task, outcomes)
@@ -126,6 +132,11 @@ impl ModalController {
                     .on_event(event, current_playback_owner)
                     .map(Message::TagTracksModal);
             }
+            AppModal::AdvancedSearch(advanced_search_modal) => {
+                task = advanced_search_modal
+                    .on_event(event)
+                    .map(Message::AdvancedSearchModal);
+            }
         }
 
         task
@@ -133,7 +144,7 @@ impl ModalController {
 
     #[instrument(skip_all, level = "debug")]
     pub fn view<'a>(
-        &self,
+        &'a self,
         theme: &Theme,
         tracks: &'a FxHashMap<TrackId, Track>,
         tags: &'a [Tag],
@@ -150,6 +161,11 @@ impl ModalController {
                 tag_tracks_modal
                     .view(theme, tracks, tags, tag_groups, track_tag_index)
                     .map(Message::TagTracksModal),
+            ),
+            AppModal::AdvancedSearch(advanced_search_modal) => Some(
+                advanced_search_modal
+                    .view(theme)
+                    .map(Message::AdvancedSearchModal),
             ),
         }
     }
