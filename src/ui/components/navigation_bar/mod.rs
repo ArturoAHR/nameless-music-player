@@ -9,7 +9,7 @@ use crate::{
     outcome::ModalOutcome,
     ui::{
         components::navigation_bar::navigation_bar_menu::main_menu_dropdown,
-        theme::Theme,
+        theme::{Theme, catalog},
         widgets::icons::{self, icon},
     },
 };
@@ -64,7 +64,9 @@ impl NavigationBar {
             row![
                 main_menu_dropdown(theme),
                 Space::new().width(Length::Fill),
-                button(icon(icons::SEARCH)).on_press(Message::OpenAdvancedSearchModal)
+                button(icon(icons::SEARCH))
+                    .on_press(Message::OpenAdvancedSearchModal)
+                    .style(catalog::button::clear_icon_button)
             ]
             .align_y(alignment::Vertical::Center)
             .padding(Padding::from([0.0, theme.sizes.space.lg]))
