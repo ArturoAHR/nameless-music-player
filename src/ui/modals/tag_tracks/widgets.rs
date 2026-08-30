@@ -233,12 +233,9 @@ pub fn footer<'a>(
     container(
         row![
             button(
-                row![
-                    icon(icons::CHEVRON_LEFT).size(theme.sizes.font.body),
-                    text!("Previous")
-                ]
-                .spacing(theme.sizes.space.lg)
-                .align_y(alignment::Vertical::Bottom)
+                row![icon(icons::CHEVRON_LEFT), text!("Previous")]
+                    .spacing(theme.sizes.space.lg)
+                    .align_y(alignment::Vertical::Bottom)
             )
             .on_press_maybe((track_tagging_queue_cursor > 0).then_some(Message::GoToPreviousTrack))
             .padding(Padding::from([
@@ -248,12 +245,9 @@ pub fn footer<'a>(
             .style(catalog::button::modal_footer_button),
             Space::new().width(Length::Fill),
             button(
-                row![
-                    text!("Next"),
-                    icon(icons::CHEVRON_RIGHT).size(theme.sizes.font.body)
-                ]
-                .spacing(theme.sizes.space.lg)
-                .align_y(alignment::Vertical::Bottom)
+                row![text!("Next"), icon(icons::CHEVRON_RIGHT)]
+                    .spacing(theme.sizes.space.lg)
+                    .align_y(alignment::Vertical::Bottom)
             )
             .on_press_maybe(
                 (track_tagging_queue_cursor < track_tagging_queue.len() - 1)

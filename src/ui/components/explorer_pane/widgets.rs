@@ -50,7 +50,6 @@ pub fn main_library_button<'a>(
     button(
         row![
             icon(icons::MUSICAL_NOTE)
-                .size(theme.sizes.font.body)
                 .height(16)
                 .align_y(alignment::Vertical::Center),
             ellipsized_text("Music")
@@ -111,7 +110,7 @@ pub fn tag_group_dropdown_controller<'a>(
 
     button(
         row![
-            icon(chevron).size(theme.sizes.font.caption),
+            icon(chevron),
             ellipsized_text(tag_group.name.to_uppercase()).size(theme.sizes.font.body)
         ]
         .width(Length::Fill)

@@ -69,9 +69,7 @@ pub fn dropdown_menu_grouping_option<'a, Message: Clone + 'a>(
                 .width(Length::Fill)
                 .style(catalog::button::menu_option),
             Space::new().width(Length::Fill),
-            icon(icons::CHEVRON_RIGHT)
-                .size(theme.sizes.font.caption)
-                .color(theme.palette.text)
+            icon(icons::CHEVRON_RIGHT).color(theme.palette.text)
         ]
         .align_y(alignment::Vertical::Center),
         submenu,

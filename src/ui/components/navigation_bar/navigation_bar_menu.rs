@@ -17,7 +17,7 @@ pub fn main_menu_dropdown<'a>(theme: &Theme) -> DropdownMenuToggle<'a, Message> 
         theme,
         button(
             icon(icons::MENU)
-                .size(theme.sizes.font.h2)
+                .size(theme.sizes.font.h1)
                 .color(theme.palette.text),
         )
         .padding(Padding::default())
@@ -38,7 +38,7 @@ pub fn main_menu<'a>(theme: &Theme) -> DropdownMenu<'a, Message> {
             // dropdown_menu_option(theme, "Help", None),
         ],
     )
-    .width(Length::Fixed(100.0))
+    .width(Length::Fixed(120.0))
 }
 
 pub fn file_menu<'a>(theme: &Theme) -> DropdownMenu<'a, Message> {
