@@ -34,6 +34,7 @@ implicit_hasher = "allow"
 
 [features]
 development = ["iced/debug"]
+hot-reload = ["development", "iced/hot"]
 testing = ["dep:iced_test"]
 
 [dependencies]

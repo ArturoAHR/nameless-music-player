@@ -4,6 +4,10 @@ set dotenv-load
 run *args:
   cargo run --features development {{args}}
 
+# Run with Hot Reload
+hot-reload *args:
+  cargo hot --features hot-reload {{args}}
+
 # Setup development environment
 setup:
     cog install-hook --all
