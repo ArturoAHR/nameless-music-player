@@ -150,6 +150,10 @@ impl App {
     ) -> (Self, Task<Message>) {
         info!("Setting up App instance.");
 
+        let playback_bar = PlaybackBar::new();
+
+        playback_controller.set_volume_percentage(playback_bar.volume_percentage);
+
         (
             Self {
                 pool,
@@ -184,7 +188,7 @@ impl App {
                 queue_pane: QueuePane::default(),
                 track_information_pane: TrackInformationPane::default(),
                 status_bar: StatusBar {},
-                playback_bar: PlaybackBar::new(),
+                playback_bar,
                 modal_controller: ModalController::default(),
             },
             Task::batch([
@@ -289,16 +293,16 @@ impl App {
             Message::DeletedTagGroup(Err(error)) => {
                 error!("Failed to delete tag: {error}");
             }
-            Message::ScanDirectory(Some(directories)) => {
+            Message::ScanDirectory(Some(directories)) if !directories.is_empty() => {
                 let pool = self.pool.clone();
-                self.status = AppStatus::AddingTracks;
-
                 task = Task::perform(
                     async move { scan_files_in_directory(pool, directories).await },
                     Message::ScannedDirectory,
                 );
+
+                self.status = AppStatus::AddingTracks;
             }
-            Message::ScanDirectory(None) => {
+            Message::ScanDirectory(_) => {
                 info!("Scan directory operation was cancelled");
             }
             Message::ScannedDirectory(scan_result) => {

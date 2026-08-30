@@ -3,7 +3,7 @@ use std::{
     rc::Rc,
     sync::{
         Arc,
-        atomic::{AtomicI64, AtomicU64, Ordering},
+        atomic::{AtomicI64, AtomicU32, AtomicU64, Ordering},
     },
 };
 
@@ -100,6 +100,7 @@ impl PlaybackEngine for TestEngine {
         track_start_timestamp: Arc<AtomicI64>,
         samples_played_timestamp_offset: Arc<AtomicU64>,
         generation_counter: Arc<GenerationCounter>,
+        _volume_gain: Arc<AtomicU32>,
     ) -> Result<(u32, u16), PlaybackEngineError> {
         self.sample_buffer_consumer = Some(sample_buffer_consumer);
         self.samples_played = samples_played;
@@ -144,6 +145,7 @@ impl PlaybackEngine for TestEngineContainer {
         track_start_timestamp: Arc<AtomicI64>,
         samples_played_timestamp_offset: Arc<AtomicU64>,
         generation_counter: Arc<GenerationCounter>,
+        volume_gain: Arc<AtomicU32>,
     ) -> Result<(u32, u16), PlaybackEngineError> {
         self.engine.borrow_mut().build_stream(
             sample_buffer_consumer,
@@ -151,6 +153,7 @@ impl PlaybackEngine for TestEngineContainer {
             track_start_timestamp,
             samples_played_timestamp_offset,
             generation_counter,
+            volume_gain,
         )
     }
 

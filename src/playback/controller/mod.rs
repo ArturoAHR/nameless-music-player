@@ -2,7 +2,7 @@ use std::{
     cmp::max,
     sync::{
         Arc,
-        atomic::{AtomicI64, AtomicU64, Ordering},
+        atomic::{AtomicI64, AtomicU32, AtomicU64, Ordering},
         mpsc::{SendError, Sender},
     },
     thread::JoinHandle,
@@ -15,6 +15,7 @@ use tracing::{error, instrument};
 use crate::{
     playback::{
         constants::SAMPLE_BUFFER_CAPACITY,
+        controller::constants::MINIMUM_VOLUME_DECIBELS,
         engine::{PlaybackEngine, PlaybackEngineError},
         pipeline::{
             AudioFormat,
@@ -26,6 +27,7 @@ use crate::{
     track::models::Track,
 };
 
+pub mod constants;
 pub mod event;
 pub mod handler;
 
@@ -59,6 +61,7 @@ pub struct PlaybackController {
     track_start_timestamp: Arc<AtomicI64>,
     samples_played_timestamp_offset: Arc<AtomicU64>,
     generation_counter: Arc<GenerationCounter>,
+    volume_gain: Arc<AtomicU32>,
 }
 
 #[derive(Debug, Clone)]
@@ -96,6 +99,7 @@ impl PlaybackController {
         });
         let track_start_timestamp = Arc::new(AtomicI64::new(0));
         let samples_played_timestamp_offset = Arc::new(AtomicU64::new(0));
+        let volume_gain = Arc::new(AtomicU32::new(0));
 
         Self {
             status: PlaybackControllerStatus::Stopped,
@@ -109,6 +113,7 @@ impl PlaybackController {
             generation_counter: Arc::clone(&generation_counter),
             track_start_timestamp: Arc::clone(&track_start_timestamp),
             samples_played_timestamp_offset: Arc::clone(&samples_played_timestamp_offset),
+            volume_gain: Arc::clone(&volume_gain),
         }
     }
 
@@ -142,6 +147,7 @@ impl PlaybackController {
             Arc::clone(&self.track_start_timestamp),
             Arc::clone(&self.samples_played_timestamp_offset),
             Arc::clone(&self.generation_counter),
+            Arc::clone(&self.volume_gain),
         )?;
 
         self.output_format = Some(AudioFormat {
@@ -209,6 +215,23 @@ impl PlaybackController {
         self.send_audio_pipeline_command(AudioPipelineThreadCommand::Seek(timestamp))?;
 
         Ok(())
+    }
+
+    #[instrument(skip(self))]
+    pub fn set_volume_percentage(&self, volume_percentage: u8) {
+        if volume_percentage == 0 {
+            self.volume_gain.store(0, Ordering::Relaxed);
+
+            return;
+        }
+
+        let volume_percentage: f32 = From::<u8>::from(volume_percentage.min(100));
+        let volume_percentage_ratio = 1.0 - volume_percentage / 100.0;
+        let decibels = MINIMUM_VOLUME_DECIBELS * volume_percentage_ratio;
+        let volume_gain = 10.0f32.powf(decibels / 20.0);
+
+        self.volume_gain
+            .store(volume_gain.to_bits(), Ordering::Relaxed);
     }
 
     pub fn send_audio_pipeline_command(

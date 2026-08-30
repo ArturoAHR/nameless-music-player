@@ -2,7 +2,7 @@ use std::{
     fmt::Debug,
     sync::{
         Arc,
-        atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicI64, AtomicU32, AtomicU64, Ordering},
     },
 };
 
@@ -20,7 +20,6 @@ use crate::playback::{
     engine::thread::{AudioEngineStreamBuildArguments, build_output_stream},
 };
 
-pub mod constants;
 pub mod thread;
 
 #[derive(Debug, Error, Clone)]
@@ -88,6 +87,7 @@ pub trait PlaybackEngine {
         track_start_timestamp: Arc<AtomicI64>,
         samples_played_timestamp_offset: Arc<AtomicU64>,
         generation_counter: Arc<GenerationCounter>,
+        volume_gain: Arc<AtomicU32>,
     ) -> Result<(u32, u16), PlaybackEngineError>;
     fn pause(&mut self) -> Result<(), PlaybackEngineError>;
     fn play(&mut self) -> Result<(), PlaybackEngineError>;
@@ -141,6 +141,7 @@ impl PlaybackEngine for AudioEngine {
         track_start_timestamp: Arc<AtomicI64>,
         samples_played_timestamp_offset: Arc<AtomicU64>,
         generation_counter: Arc<GenerationCounter>,
+        volume_gain: Arc<AtomicU32>,
     ) -> Result<(u32, u16), PlaybackEngineError> {
         let host = default_host();
         let device = host
@@ -165,6 +166,7 @@ impl PlaybackEngine for AudioEngine {
             track_start_timestamp,
             samples_played_timestamp_offset,
             generation_counter,
+            volume_gain,
             paused: Arc::clone(&self.paused),
         };
 

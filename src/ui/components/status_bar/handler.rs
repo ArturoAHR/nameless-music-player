@@ -9,7 +9,7 @@ use crate::{
 impl App {
     pub fn view_status_bar(&self) -> Element<'_, app::Message, Theme, Renderer> {
         self.status_bar
-            .view(&self.theme, &self.status)
+            .view(&self.theme, &self.displayed_track_ids, &self.status)
             .map(ui::Message::StatusBar)
             .map(app::Message::Ui)
     }

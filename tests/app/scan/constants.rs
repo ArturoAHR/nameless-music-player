@@ -179,7 +179,7 @@ pub static ALL_FORMATS_EXPECTED_TRACKS: LazyLock<Vec<ExpectedTrack>> = LazyLock:
             channels: 1,
 
             // Track Metadata
-            title: None,
+            title: Some("track".to_owned()),
             artist: None,
             album: None,
             album_artist: None,
@@ -212,7 +212,7 @@ pub static ALL_FORMATS_EXPECTED_TRACKS: LazyLock<Vec<ExpectedTrack>> = LazyLock:
             channels: 1,
 
             // Track Metadata
-            title: None,
+            title: Some("track".to_owned()),
             artist: None,
             album: None,
             album_artist: None,
@@ -283,7 +283,7 @@ pub static METADATA_VARIANTS_EXPECTED_TRACKS: LazyLock<Vec<ExpectedTrack>> = Laz
             channels: 1,
 
             // Track Metadata
-            title: None,
+            title: Some("artist_album".to_owned()),
             artist: Some("Solo Artist".to_owned()),
             album: Some("Solo Album".to_owned()),
             album_artist: None,
@@ -349,7 +349,7 @@ pub static METADATA_VARIANTS_EXPECTED_TRACKS: LazyLock<Vec<ExpectedTrack>> = Laz
             channels: 1,
 
             // Track Metadata
-            title: None,
+            title: Some("no_tags".to_owned()),
             artist: None,
             album: None,
             album_artist: None,
@@ -485,7 +485,7 @@ pub static CORRUPT_EXPECTED_TRACKS: LazyLock<Vec<ExpectedTrack>> = LazyLock::new
         channels: 1,
 
         // Track Metadata
-        title: None,
+        title: Some("mislabeled".to_owned()),
         artist: None,
         album: None,
         album_artist: None,
@@ -555,7 +555,7 @@ pub static PARTIALLY_CORRUPT_EXPECTED_TRACKS: LazyLock<Vec<ExpectedTrack>> = Laz
             channels: 1,
 
             // Track Metadata
-            title: None,
+            title: Some("track".to_owned()),
             artist: None,
             album: None,
             album_artist: None,
