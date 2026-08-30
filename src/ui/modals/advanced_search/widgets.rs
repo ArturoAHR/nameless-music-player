@@ -1,8 +1,8 @@
 use std::{iter::once, sync::Arc};
 
 use iced::{
-    Element, Length, Renderer, alignment,
-    widget::{Space, button, column, container, pick_list, right, row, text},
+    Element, Length, Padding, Renderer, alignment,
+    widget::{Space, button, column, container, pick_list, right, row, scrollable, text},
 };
 use strum::VariantArray;
 
@@ -15,7 +15,10 @@ use crate::{
     ui::{
         modals::advanced_search::{Message, PickListOption},
         theme::{Theme, catalog},
-        widgets::icons::{self, icon},
+        widgets::{
+            icons::{self, icon},
+            separator::horizontal_separator,
+        },
     },
 };
 
@@ -41,14 +44,13 @@ pub fn body<'a>(
     criteria: &SearchConditionGroup,
     tag_options: &'a [PickListOption<TagId>],
 ) -> Element<'a, Message, Theme, Renderer> {
-    container(search_condition_group_form(
-        theme,
-        criteria,
-        tag_options,
-        Arc::from([]),
-    ))
+    container(scrollable(row![
+        search_condition_group_form(theme, criteria, tag_options, Arc::from([]),),
+        Space::new().width(theme.sizes.space.lg)
+    ]))
     .height(Length::Fill)
     .width(Length::Fill)
+    .padding(Padding::from(theme.sizes.space.xxl).right(theme.sizes.space.lg))
     .into()
 }
 
@@ -71,6 +73,7 @@ pub fn search_condition_group_form<'a>(
                 )
             },
         )
+        .padding([theme.sizes.space.md, theme.sizes.space.lg])
         .into()
     };
 
@@ -80,9 +83,13 @@ pub fn search_condition_group_form<'a>(
         search_condition_group_operator_pick_list,
         button(text("+ Condition"))
             .on_press(Message::AddCondition(Arc::clone(&index_path)))
+            .padding([theme.sizes.space.md, theme.sizes.space.lg])
+            .style(catalog::button::outline)
             .into(),
         button(text("+ Group"))
             .on_press(Message::AddSubgroup(Arc::clone(&index_path)))
+            .padding([theme.sizes.space.md, theme.sizes.space.lg])
+            .style(catalog::button::outline)
             .into(),
     ];
 
@@ -90,12 +97,17 @@ pub fn search_condition_group_form<'a>(
         search_condition_group_control_row_elements.push(
             button(icon(icons::CLOSE))
                 .on_press(Message::RemoveGroup(Arc::clone(&index_path)))
+                .style(catalog::button::clear_icon_button)
                 .into(),
         );
     }
 
-    let mut search_condition_group_form_rows =
-        vec![row(search_condition_group_control_row_elements).into()];
+    let mut search_condition_group_form_rows = vec![
+        row(search_condition_group_control_row_elements)
+            .spacing(theme.sizes.space.lg)
+            .align_y(alignment::Vertical::Center)
+            .into(),
+    ];
 
     for (index, search_condition) in search_condition_group.conditions.iter().enumerate() {
         let search_condition_index_path = index_path.iter().copied().chain(once(index)).collect();
@@ -118,7 +130,20 @@ pub fn search_condition_group_form<'a>(
         });
     }
 
-    container(column(search_condition_group_form_rows)).into()
+    let search_condition_group_form =
+        column(search_condition_group_form_rows).spacing(theme.sizes.space.xl);
+
+    if index_path.is_empty() {
+        return container(search_condition_group_form).into();
+    }
+
+    container(
+        row![horizontal_separator(), search_condition_group_form]
+            .spacing(theme.sizes.space.lg)
+            .padding(Padding::default().left(theme.sizes.space.xxl)),
+    )
+    .height(Length::Shrink)
+    .into()
 }
 
 pub fn search_condition_statement_form<'a>(
@@ -132,6 +157,10 @@ pub fn search_condition_statement_form<'a>(
         | SearchConditionStatement::DoesNotHaveTag { tag_id } => {
             let index_path = Arc::clone(&index_path);
 
+            let menu_height = (tag_options.len() * 36).min(290);
+
+            dbg!(&menu_height);
+
             pick_list(
                 tag_options,
                 tag_id.and_then(|tag_id| {
@@ -143,26 +172,36 @@ pub fn search_condition_statement_form<'a>(
                     Message::SelectConditionStatementTag(tag_option.value, Arc::clone(&index_path))
                 },
             )
+            .width(Length::Fill)
+            .menu_height(menu_height as f32)
+            .padding([theme.sizes.space.md, theme.sizes.space.lg])
         }
     };
 
-    let remove_button =
-        button(icon(icons::CLOSE)).on_press(Message::RemoveStatement(Arc::clone(&index_path)));
+    let remove_button = button(icon(icons::CLOSE))
+        .on_press(Message::RemoveStatement(Arc::clone(&index_path)))
+        .style(catalog::button::clear_icon_button);
 
-    container(row![
-        pick_list(
-            SearchConditionStatementKind::VARIANTS,
-            Some(search_condition_statement.kind()),
-            move |search_condition_statement_kind| {
-                Message::SelectConditionStatement(
-                    search_condition_statement_kind,
-                    Arc::clone(&index_path),
-                )
-            },
-        ),
-        statement_form,
-        remove_button,
-    ])
+    container(
+        row![
+            pick_list(
+                SearchConditionStatementKind::VARIANTS,
+                Some(search_condition_statement.kind()),
+                move |search_condition_statement_kind| {
+                    Message::SelectConditionStatement(
+                        search_condition_statement_kind,
+                        Arc::clone(&index_path),
+                    )
+                },
+            )
+            .width(216)
+            .padding([theme.sizes.space.md, theme.sizes.space.lg]),
+            statement_form,
+            remove_button,
+        ]
+        .align_y(alignment::Vertical::Center)
+        .spacing(theme.sizes.space.lg),
+    )
     .into()
 }
 

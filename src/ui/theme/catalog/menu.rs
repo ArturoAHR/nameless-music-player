@@ -1,5 +1,6 @@
 use iced::{
     Border, Shadow,
+    border::Radius,
     widget::overlay::menu::{Catalog, Style},
 };
 
@@ -13,7 +14,11 @@ impl Catalog for Theme {
     fn default<'a>() -> <Self as Catalog>::Class<'a> {
         Box::new(|theme| Style {
             background: theme.palette.surface.into(),
-            border: Border::default(),
+            border: Border {
+                color: theme.palette.border,
+                width: 1.0,
+                radius: Radius::from(theme.sizes.border.radius_md).top(0.0),
+            },
             selected_background: theme.palette.selected.into(),
             selected_text_color: theme.palette.text_selected,
             shadow: Shadow::default(),

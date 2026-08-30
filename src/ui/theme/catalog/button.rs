@@ -214,3 +214,27 @@ pub fn active_explorer_pane_option(theme: &Theme, status: Status) -> Style {
         ..Style::default()
     }
 }
+
+pub fn outline(theme: &Theme, status: Status) -> Style {
+    let background: Option<Background> = match status {
+        Status::Active | Status::Disabled => None,
+        Status::Pressed => Some(lighten(theme.palette.hover, 0.1).into()),
+        Status::Hovered => Some(theme.palette.hover.into()),
+    };
+
+    let text_color = match status {
+        Status::Active | Status::Hovered | Status::Pressed => theme.palette.text_muted,
+        Status::Disabled => darken(theme.palette.text_muted, 0.1),
+    };
+
+    Style {
+        background,
+        text_color,
+        border: Border {
+            radius: Radius::from(theme.sizes.border.radius_md),
+            color: theme.palette.border,
+            width: 1.0,
+        },
+        ..Style::default()
+    }
+}
