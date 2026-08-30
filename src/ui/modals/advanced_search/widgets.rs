@@ -210,13 +210,22 @@ pub fn footer<'a>(theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
         row![
             button("Cancel")
                 .on_press(Message::Close)
+                .padding(Padding::from([
+                    theme.sizes.space.lg,
+                    theme.sizes.space.xxxl
+                ]))
                 .style(catalog::button::modal_footer_button),
             button("Search")
                 .on_press(Message::Search)
+                .padding(Padding::from([
+                    theme.sizes.space.lg,
+                    theme.sizes.space.xxxl,
+                ]))
                 .style(catalog::button::modal_footer_button)
         ]
         .spacing(theme.sizes.space.md),
     ))
     .padding([theme.sizes.space.lg, theme.sizes.space.xxl])
+    .style(catalog::container::modal_footer)
     .into()
 }

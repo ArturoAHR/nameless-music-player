@@ -242,8 +242,8 @@ pub fn footer<'a>(
             )
             .on_press_maybe((track_tagging_queue_cursor > 0).then_some(Message::GoToPreviousTrack))
             .padding(Padding::from([
-                theme.sizes.space.xl,
-                theme.sizes.space.xxxl
+                theme.sizes.space.lg,
+                theme.sizes.space.xxxl,
             ]))
             .style(catalog::button::modal_footer_button),
             Space::new().width(Length::Fill),
@@ -260,14 +260,13 @@ pub fn footer<'a>(
                     .then_some(Message::GoToNextTrack)
             )
             .padding(Padding::from([
-                theme.sizes.space.xl,
-                theme.sizes.space.xxxl
+                theme.sizes.space.lg,
+                theme.sizes.space.xxxl,
             ]))
             .style(catalog::button::modal_footer_button)
         ]
         .spacing(theme.sizes.space.xl),
     )
-    .height(84.0)
     .width(Length::Fill)
     .padding(Padding::from([
         theme.sizes.space.xl,

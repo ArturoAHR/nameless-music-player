@@ -223,13 +223,12 @@ pub fn footer<'a>(theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
         button(text("Done"))
             .on_press(Message::Close)
             .padding(Padding::from([
-                theme.sizes.space.xl,
+                theme.sizes.space.lg,
                 theme.sizes.space.xxxl,
             ]))
             .style(catalog::button::modal_footer_button),
     )
     .align_y(alignment::Vertical::Center)
-    .height(84.0)
     .width(Length::Fill)
     .padding(Padding::from([theme.sizes.space.xl, theme.sizes.space.xxl]))
     .style(catalog::container::modal_footer)
