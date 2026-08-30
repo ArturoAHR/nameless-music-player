@@ -289,7 +289,7 @@ impl TagTracksModal {
                 repeat: false,
                 modifiers: keyboard::Modifiers::NONE,
                 ..
-            } => {
+            } if !tag_groups.is_empty() => {
                 self.tag_groups_cursor = (self.tag_groups_cursor + 1) % tag_groups.len();
             }
             // Shift + Tab: Select previous tab group
@@ -298,7 +298,7 @@ impl TagTracksModal {
                 repeat: false,
                 modifiers: keyboard::Modifiers::SHIFT,
                 ..
-            } => {
+            } if !tag_groups.is_empty() => {
                 self.tag_groups_cursor =
                     (tag_groups.len() + self.tag_groups_cursor - 1) % tag_groups.len();
             }
