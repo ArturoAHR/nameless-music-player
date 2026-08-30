@@ -1,8 +1,7 @@
 use iced::{
-    Alignment, Element, Font, Length, Padding, Renderer, Task, font,
-    widget::{button, column, container, row, slider, text},
+    Alignment, Element, Length, Padding, Renderer, Task,
+    widget::{container, row},
 };
-use iced_palace::widget::ellipsized_text;
 use rustc_hash::FxHashMap;
 use tracing::{instrument, trace};
 
@@ -10,21 +9,13 @@ use crate::{
     app::PlaybackOwner,
     event::Event,
     outcome::PlaybackOutcome,
-    playback::{
-        controller::PlaybackControllerStatus,
-        queue::{PlaybackQueue, PlaybackQueueOrder, PlaybackRepeatMode},
-    },
-    track::{
-        models::{Track, TrackId},
-        utils::{get_track_duration_label, get_track_label},
-    },
+    playback::{controller::PlaybackControllerStatus, queue::PlaybackQueue},
+    track::models::{Track, TrackId},
     ui::{
         components::playback_bar::widgets::{
             playback_controls, playing_track_progress_bar, queue_controls, volume_bar,
         },
         theme::{Theme, catalog},
-        utils::label::format_duration,
-        widgets::icons::{self, icon},
     },
 };
 
@@ -38,9 +29,8 @@ pub struct PlaybackBar {
 
     pub status: PlaybackBarStatus,
 
-    // TODO: These values must live in the app state, declaring them here for mocking UI.
-    volume_percentage: u8,
-    muted: bool,
+    pub volume_percentage: u8,
+    pub muted: bool,
 }
 
 #[derive(Debug)]
@@ -80,7 +70,7 @@ impl PlaybackBar {
             playing_track_id: None,
 
             muted: false,
-            volume_percentage: 100,
+            volume_percentage: 50,
         }
     }
 
@@ -134,10 +124,22 @@ impl PlaybackBar {
             // TODO: Add playback outcome to change volume
             Message::ChangeVolumePercentage(volume_percentage) => {
                 self.volume_percentage = volume_percentage;
+
+                outcomes.push(Outcome::Playback(PlaybackOutcome::SetVolumePercentage(
+                    volume_percentage,
+                )));
             }
             // TODO: Add playback outcome to change volume
             Message::MutePlayback => {
                 self.muted = !self.muted;
+
+                outcomes.push(Outcome::Playback(PlaybackOutcome::SetVolumePercentage(
+                    if self.muted {
+                        0
+                    } else {
+                        self.volume_percentage
+                    },
+                )));
             }
             // TODO: Wire these two changes in upper for queue functionality
             Message::CycleRepeatMode => {

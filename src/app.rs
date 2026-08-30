@@ -150,6 +150,10 @@ impl App {
     ) -> (Self, Task<Message>) {
         info!("Setting up App instance.");
 
+        let playback_bar = PlaybackBar::new();
+
+        playback_controller.set_volume_percentage(playback_bar.volume_percentage);
+
         (
             Self {
                 pool,
@@ -184,7 +188,7 @@ impl App {
                 queue_pane: QueuePane::default(),
                 track_information_pane: TrackInformationPane::default(),
                 status_bar: StatusBar {},
-                playback_bar: PlaybackBar::new(),
+                playback_bar,
                 modal_controller: ModalController::default(),
             },
             Task::batch([

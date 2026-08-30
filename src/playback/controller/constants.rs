@@ -1,0 +1,1 @@
+pub const MINIMUM_VOLUME_DECIBELS: f32 = -40.0;

@@ -51,6 +51,7 @@ pub enum PlaybackOutcome {
     CycleRepeatMode,
     CycleOrder,
     QueueNext(Vec<TrackId>),
+    SetVolumePercentage(u8),
 }
 
 #[derive(Debug, Clone)]
@@ -161,6 +162,10 @@ impl App {
                         self.playback_queue.insert_next(queued_track_id);
                     }
                 }
+            }
+            PlaybackOutcome::SetVolumePercentage(volume_percentage) => {
+                self.playback_controller
+                    .set_volume_percentage(volume_percentage);
             }
         }
 

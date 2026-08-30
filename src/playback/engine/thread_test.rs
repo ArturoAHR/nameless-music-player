@@ -10,6 +10,7 @@ use crate::playback::constants::SAMPLE_BUFFER_CAPACITY;
 use super::*;
 
 const DEFAULT_OUTPUT_DATA_SIZE: usize = 1024;
+const OUTPUT_VOLUME_MULTIPLIER: f32 = 0.5;
 
 struct TestAudioEngineDataProcessor {
     processor: AudioEngineDataProcessor,
@@ -28,6 +29,7 @@ impl TestAudioEngineDataProcessor {
                 track_start_timestamp: Arc::new(AtomicI64::default()),
                 samples_played_timestamp_offset: Arc::new(AtomicU64::default()),
                 generation_counter: Arc::new(GenerationCounter::default()),
+                volume_gain: Arc::new(AtomicU32::new(OUTPUT_VOLUME_MULTIPLIER.to_bits())),
                 paused: Arc::new(AtomicBool::default()),
             },
             sample_buffer_producer,

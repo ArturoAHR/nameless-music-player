@@ -1,6 +1,6 @@
 use std::sync::{
     Arc,
-    atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering},
+    atomic::{AtomicBool, AtomicI64, AtomicU32, AtomicU64, Ordering},
 };
 
 use cpal::{
@@ -10,10 +10,7 @@ use cpal::{
 use rtrb::Consumer;
 use tracing::{error, warn};
 
-use crate::playback::{
-    controller::GenerationCounter,
-    engine::{PlaybackEngineError, constants::OUTPUT_VOLUME_MULTIPLIER},
-};
+use crate::playback::{controller::GenerationCounter, engine::PlaybackEngineError};
 
 #[cfg(test)]
 #[path = "thread_test.rs"]
@@ -27,6 +24,7 @@ pub struct AudioEngineStreamBuildArguments {
     pub track_start_timestamp: Arc<AtomicI64>,
     pub samples_played_timestamp_offset: Arc<AtomicU64>,
     pub generation_counter: Arc<GenerationCounter>,
+    pub volume_gain: Arc<AtomicU32>,
     pub paused: Arc<AtomicBool>,
 }
 
@@ -45,6 +43,7 @@ where
         track_start_timestamp: arguments.track_start_timestamp,
         samples_played_timestamp_offset: arguments.samples_played_timestamp_offset,
         generation_counter: arguments.generation_counter,
+        volume_gain: arguments.volume_gain,
         paused: arguments.paused,
     };
 
@@ -73,6 +72,7 @@ struct AudioEngineDataProcessor {
     track_start_timestamp: Arc<AtomicI64>,
     samples_played_timestamp_offset: Arc<AtomicU64>,
     generation_counter: Arc<GenerationCounter>,
+    volume_gain: Arc<AtomicU32>,
     paused: Arc<AtomicBool>,
 }
 
@@ -104,16 +104,13 @@ impl AudioEngineDataProcessor {
 
         let mut samples_played = 0;
         let paused = self.paused.load(Ordering::Relaxed);
+        let volume_gain = f32::from_bits(self.volume_gain.load(Ordering::Relaxed));
         for slot in data.iter_mut() {
-            #[allow(clippy::collapsible_if)]
-            if !paused {
-                if let Ok(sample) = self.sample_buffer_consumer.pop() {
-                    // TODO: Remove this once we have volume built
-                    *slot = T::from_sample_(sample * OUTPUT_VOLUME_MULTIPLIER);
-                    samples_played += 1;
+            if !paused && let Ok(sample) = self.sample_buffer_consumer.pop() {
+                *slot = T::from_sample_(sample * volume_gain);
+                samples_played += 1;
 
-                    continue;
-                }
+                continue;
             }
 
             *slot = T::from_sample_(0.0);
