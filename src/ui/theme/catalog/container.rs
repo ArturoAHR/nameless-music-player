@@ -30,6 +30,13 @@ pub fn background_surface_raised(theme: &Theme) -> Style {
     }
 }
 
+pub fn background_surface_sunken(theme: &Theme) -> Style {
+    Style {
+        background: Some(theme.palette.surface_sunken.into()),
+        ..Style::default()
+    }
+}
+
 pub fn context_menu(theme: &Theme) -> Style {
     Style {
         background: Some(theme.palette.surface_raised.into()),

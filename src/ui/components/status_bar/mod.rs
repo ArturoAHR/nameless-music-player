@@ -1,10 +1,14 @@
 use iced::{
-    Element, Length, Renderer, Task,
+    Element, Length, Renderer, Task, alignment,
     widget::{container, text},
 };
 use tracing::instrument;
 
-use crate::{app::AppStatus, event::Event, ui::theme::Theme};
+use crate::{
+    app::AppStatus,
+    event::Event,
+    ui::theme::{Theme, catalog},
+};
 
 pub mod handler;
 
@@ -42,13 +46,16 @@ impl StatusBar {
             AppStatus::FinishedAddingTracks => "Finished adding tracks",
         };
 
-        container(text(status_label))
-            .height(Length::Fixed(theme.sizes.component.status_bar_height))
-            .width(Length::Fill)
-            .style(|theme: &Theme| container::Style {
-                background: Some(theme.palette.surface_sunken.into()),
-                ..container::Style::default()
-            })
-            .into()
+        container(
+            text(status_label)
+                .size(theme.sizes.font.body)
+                .color(theme.palette.text_muted),
+        )
+        .height(Length::Fixed(theme.sizes.component.status_bar_height))
+        .width(Length::Fill)
+        .align_y(alignment::Vertical::Center)
+        .padding([0.0, theme.sizes.space.md])
+        .style(catalog::container::background_surface_sunken)
+        .into()
     }
 }

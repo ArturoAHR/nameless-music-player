@@ -293,16 +293,16 @@ impl App {
             Message::DeletedTagGroup(Err(error)) => {
                 error!("Failed to delete tag: {error}");
             }
-            Message::ScanDirectory(Some(directories)) => {
+            Message::ScanDirectory(Some(directories)) if !directories.is_empty() => {
                 let pool = self.pool.clone();
-                self.status = AppStatus::AddingTracks;
-
                 task = Task::perform(
                     async move { scan_files_in_directory(pool, directories).await },
                     Message::ScannedDirectory,
                 );
+
+                self.status = AppStatus::AddingTracks;
             }
-            Message::ScanDirectory(None) => {
+            Message::ScanDirectory(_) => {
                 info!("Scan directory operation was cancelled");
             }
             Message::ScannedDirectory(scan_result) => {
