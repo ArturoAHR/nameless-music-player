@@ -161,6 +161,21 @@ pub fn clear_icon_button(theme: &Theme, status: Status) -> Style {
     }
 }
 
+pub fn accent_icon_button(theme: &Theme, status: Status) -> Style {
+    let text_color = match status {
+        Status::Active => theme.palette.text,
+        Status::Hovered => theme.palette.text_selected,
+        Status::Pressed => theme.palette.accent,
+        Status::Disabled => theme.palette.text_muted,
+    };
+
+    Style {
+        background: None,
+        text_color,
+        ..Style::default()
+    }
+}
+
 pub fn explorer_pane_dropdown_controller(theme: &Theme, status: Status) -> Style {
     let text_color = match status {
         Status::Active => theme.palette.text_muted,

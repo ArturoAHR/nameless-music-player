@@ -41,7 +41,7 @@ impl Sizes {
             app_header_height: 32.0,
             nav_bar_height: 35.0,
             status_bar_height: 20.0,
-            playback_bar_height: 90.0,
+            playback_bar_height: 80.0,
 
             table_row_height: 30.0,
             table_header_height: 35.0,
