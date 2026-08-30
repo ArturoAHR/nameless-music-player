@@ -180,6 +180,8 @@ impl AdvancedSearchModal {
         (task, outcomes)
     }
 
+    pub fn validate_criteria(&mut self) {}
+
     pub fn on_event(&mut self, _event: &Event) -> Task<Message> {
         Task::none()
     }
@@ -190,7 +192,7 @@ impl AdvancedSearchModal {
             vertical_separator(),
             body(theme, &self.criteria, &self.tag_options),
             vertical_separator(),
-            footer(theme)
+            footer(theme, &self.criteria)
         ])
         .height(600.0)
         .width(750.0)

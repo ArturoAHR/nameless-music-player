@@ -159,8 +159,6 @@ pub fn search_condition_statement_form<'a>(
 
             let menu_height = (tag_options.len() * 36).min(290);
 
-            dbg!(&menu_height);
-
             pick_list(
                 tag_options,
                 tag_id.and_then(|tag_id| {
@@ -205,7 +203,10 @@ pub fn search_condition_statement_form<'a>(
     .into()
 }
 
-pub fn footer<'a>(theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
+pub fn footer<'a>(
+    theme: &Theme,
+    criteria: &SearchConditionGroup,
+) -> Element<'a, Message, Theme, Renderer> {
     container(right(
         row![
             button("Cancel")
@@ -216,7 +217,7 @@ pub fn footer<'a>(theme: &Theme) -> Element<'a, Message, Theme, Renderer> {
                 ]))
                 .style(catalog::button::modal_footer_button),
             button("Search")
-                .on_press(Message::Search)
+                .on_press_maybe(criteria.validate().then_some(Message::Search))
                 .padding(Padding::from([
                     theme.sizes.space.lg,
                     theme.sizes.space.xxxl,
