@@ -121,7 +121,7 @@ pub enum Message {
     ToggledTrackTag(Result<(), AppError>),
     AddedTag(Result<(), AppError>),
     DeletedTag(Result<(), AppError>),
-    InsertedTagGroup(Result<(), AppError>),
+    AddedTagGroup(Result<(), AppError>),
     DeletedTagGroup(Result<(), AppError>),
 
     AudioPipelineEventChannelReady(
@@ -278,7 +278,7 @@ impl App {
                 error!("Failed to load tag library: {error}");
             }
             Message::AddedTag(Ok(()))
-            | Message::InsertedTagGroup(Ok(()))
+            | Message::AddedTagGroup(Ok(()))
             | Message::DeletedTag(Ok(()))
             | Message::DeletedTagGroup(Ok(())) => {}
             Message::AddedTag(Err(error)) => {
@@ -287,7 +287,7 @@ impl App {
             Message::DeletedTag(Err(error)) => {
                 error!("Failed to delete tag: {error}");
             }
-            Message::InsertedTagGroup(Err(error)) => {
+            Message::AddedTagGroup(Err(error)) => {
                 error!("Failed to insert tag group: {error}");
             }
             Message::DeletedTagGroup(Err(error)) => {

@@ -271,7 +271,7 @@ impl App {
                 let pool = self.pool.clone();
                 Task::perform(
                     async move { insert_tag_group(pool, tag_group_name).await },
-                    Message::AddedTag,
+                    Message::AddedTagGroup,
                 )
                 .chain(Task::done(Message::LoadTagLibrary))
             }
