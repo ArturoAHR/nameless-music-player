@@ -16,25 +16,9 @@ impl App {
 
     pub fn handle_track_information_pane(&mut self, message: Message) -> Task<app::Message> {
         let (task, _outcomes) = self.track_information_pane.update(message);
-        let component_task = task
-            .map(ui::Message::TrackInformationPane)
-            .map(app::Message::Ui);
 
-        // if outcomes.len() == 0 {
-        component_task
-        // };
-
-        // let mut tasks = vec![component_task];
-
-        // for outcome in outcomes {
-        //     let outcome = match outcome {};
-
-        //     let outcome_task = self.handle_outcome(outcome);
-
-        //     tasks.push(outcome_task);
-        // }
-
-        // Task::batch(tasks)
+        task.map(ui::Message::TrackInformationPane)
+            .map(app::Message::Ui)
     }
 
     pub fn notify_track_information_pane(&mut self, event: &Event) -> Task<app::Message> {
