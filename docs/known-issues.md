@@ -1,3 +1,3 @@
-## Context Menu
+## Tags
 
-Disabled options trigger hover of components below the context menu.
+- Tags get sorted in a case sensitive way.
