@@ -347,7 +347,7 @@ impl TagTracksModal {
     }
 
     pub fn go_to_next_track(&mut self) -> Option<Outcome> {
-        if self.track_tagging_queue_cursor == self.track_tagging_queue.len() - 1 {
+        if self.track_tagging_queue_cursor == self.track_tagging_queue.len().saturating_sub(1) {
             return None;
         }
 
@@ -389,11 +389,11 @@ impl TagTracksModal {
     }
 
     pub fn go_to_last_track(&mut self) -> Option<Outcome> {
-        if self.track_tagging_queue_cursor == self.track_tagging_queue.len() - 1 {
+        if self.track_tagging_queue_cursor == self.track_tagging_queue.len().saturating_sub(1) {
             return None;
         }
 
-        self.track_tagging_queue_cursor = self.track_tagging_queue.len() - 1;
+        self.track_tagging_queue_cursor = self.track_tagging_queue.len().saturating_sub(1);
 
         let track_id = self
             .track_tagging_queue
