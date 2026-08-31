@@ -59,7 +59,14 @@ pub async fn get_track_tags(pool: SqlitePool) -> Result<Vec<TrackTag>, AppError>
             Expr::col((TrackTagIden::Table, TrackTagIden::TagId))
                 .equals((TagIden::Table, TagIden::Id)),
         )
+        .join(
+            JoinType::InnerJoin,
+            TagGroupIden::Table,
+            Expr::col((TagIden::Table, TagIden::TagGroupId))
+                .equals((TagGroupIden::Table, TagGroupIden::Id)),
+        )
         .and_where(Expr::col((TagIden::Table, TagIden::DeletedAt)).is_null())
+        .and_where(Expr::col((TagGroupIden::Table, TagGroupIden::DeletedAt)).is_null())
         .build_sqlx(SqliteQueryBuilder);
 
     let track_tags = sqlx::query_as_with::<_, TrackTag, _>(&sql, values)
