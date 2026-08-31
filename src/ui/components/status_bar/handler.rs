@@ -16,23 +16,8 @@ impl App {
 
     pub fn handle_status_bar(&mut self, event: Message) -> Task<app::Message> {
         let (task, _outcomes) = self.status_bar.update(event);
-        let component_task = task.map(ui::Message::StatusBar).map(app::Message::Ui);
 
-        // if outcomes.len() == 0 {
-        component_task
-        // };
-
-        // let mut tasks = vec![component_task];
-
-        // for outcome in outcomes {
-        //     let outcome = match outcome {};
-
-        //     let outcome_task = self.handle_outcome(outcome);
-
-        //     tasks.push(outcome_task);
-        // }
-
-        // Task::batch(tasks)
+        task.map(ui::Message::StatusBar).map(app::Message::Ui)
     }
 
     pub fn notify_status_bar(&mut self, event: &Event) -> Task<app::Message> {

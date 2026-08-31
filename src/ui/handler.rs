@@ -54,7 +54,7 @@ impl App {
                         let main_queue_split_ratio = 1.0
                             - (1.0 - self.pane_split_ratio.explorer_main)
                                 * (1.0 - self.pane_split_ratio.main_queue)
-                                / (1.0 - split_ratio);
+                                / (1.0 - split_ratio.min(0.99));
 
                         if are_pane_widths_valid(
                             split_ratio,

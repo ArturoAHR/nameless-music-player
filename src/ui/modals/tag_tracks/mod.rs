@@ -289,7 +289,7 @@ impl TagTracksModal {
                 repeat: false,
                 modifiers: keyboard::Modifiers::NONE,
                 ..
-            } => {
+            } if !tag_groups.is_empty() => {
                 self.tag_groups_cursor = (self.tag_groups_cursor + 1) % tag_groups.len();
             }
             // Shift + Tab: Select previous tab group
@@ -298,7 +298,7 @@ impl TagTracksModal {
                 repeat: false,
                 modifiers: keyboard::Modifiers::SHIFT,
                 ..
-            } => {
+            } if !tag_groups.is_empty() => {
                 self.tag_groups_cursor =
                     (tag_groups.len() + self.tag_groups_cursor - 1) % tag_groups.len();
             }
@@ -347,7 +347,7 @@ impl TagTracksModal {
     }
 
     pub fn go_to_next_track(&mut self) -> Option<Outcome> {
-        if self.track_tagging_queue_cursor == self.track_tagging_queue.len() - 1 {
+        if self.track_tagging_queue_cursor == self.track_tagging_queue.len().saturating_sub(1) {
             return None;
         }
 
@@ -389,11 +389,11 @@ impl TagTracksModal {
     }
 
     pub fn go_to_last_track(&mut self) -> Option<Outcome> {
-        if self.track_tagging_queue_cursor == self.track_tagging_queue.len() - 1 {
+        if self.track_tagging_queue_cursor == self.track_tagging_queue.len().saturating_sub(1) {
             return None;
         }
 
-        self.track_tagging_queue_cursor = self.track_tagging_queue.len() - 1;
+        self.track_tagging_queue_cursor = self.track_tagging_queue.len().saturating_sub(1);
 
         let track_id = self
             .track_tagging_queue
