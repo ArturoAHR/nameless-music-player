@@ -30,7 +30,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libasound2-dev ffmpeg
+          sudo apt-get install -y libdbus-1-dev libasound2-dev pkg-config ffmpeg
 
       - name: Check lints and formatting
         run: just check --all-targets --locked -- -D warnings
