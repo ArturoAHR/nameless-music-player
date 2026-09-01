@@ -67,11 +67,6 @@ check *args:
   cargo fmt --check
   cargo clippy {{args}}
 
-# Format + lint strict
-check-strict *args:
-  cargo fmt --check
-  cargo clippy -- -D clippy::pedantic -D clippy::nursery {{args}}
-
 # Checking deps for vulnerabilities
 audit *args:
   cargo audit {{args}}

@@ -128,7 +128,7 @@ impl MainPane {
                     Element::from(Space::new())
                 }
             })
-            .width(30.0),
+            .width(30.0_f32),
             table::column(
                 TrackTableColumn::Artist,
                 Some(text("Artist").into()),
@@ -137,7 +137,7 @@ impl MainPane {
                         .wrapping(text::Wrapping::None)
                 },
             )
-            .width(200.0)
+            .width(200.0_f32)
             .resizable(true),
             table::column(
                 TrackTableColumn::Title,
@@ -147,7 +147,7 @@ impl MainPane {
                         .wrapping(text::Wrapping::None)
                 },
             )
-            .width(200.0)
+            .width(200.0_f32)
             .resizable(true),
             table::column(
                 TrackTableColumn::Duration,
@@ -159,7 +159,7 @@ impl MainPane {
                     .wrapping(text::Wrapping::None)
                 },
             )
-            .width(50.0)
+            .width(50.0_f32)
             .resizable(true)
             .align_x(alignment::Horizontal::Right),
         ];

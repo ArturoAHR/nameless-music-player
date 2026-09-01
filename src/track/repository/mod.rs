@@ -1,5 +1,5 @@
-mod upsert;
 mod select;
+mod upsert;
 
-pub use upsert::*;
 pub use select::*;
+pub use upsert::*;

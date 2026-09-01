@@ -1,6 +1,6 @@
 use sqlx::{
-    sqlite::{SqliteConnectOptions, SqlitePoolOptions},
     SqlitePool,
+    sqlite::{SqliteConnectOptions, SqlitePoolOptions},
 };
 
 pub async fn get_database_pool() -> SqlitePool {

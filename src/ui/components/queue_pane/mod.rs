@@ -113,7 +113,7 @@ impl QueuePane {
                     }
                 },
             )
-            .width(30.0),
+            .width(30.0_f32),
             column(
                 QueueTableColumn::TrackNumber,
                 Some(text("#").into()),
@@ -127,7 +127,7 @@ impl QueuePane {
                     text(format!("{queue_entry_position}."))
                 },
             )
-            .width(35.0),
+            .width(35.0_f32),
             column(
                 QueueTableColumn::Title,
                 Some(text("Title").into()),
@@ -140,7 +140,7 @@ impl QueuePane {
                     ellipsized_text(track_title).wrapping(text::Wrapping::None)
                 },
             )
-            .width(200.0)
+            .width(200.0_f32)
             .resizable(true),
             column(
                 QueueTableColumn::Artist,
@@ -154,7 +154,7 @@ impl QueuePane {
                     ellipsized_text(track_artist).wrapping(text::Wrapping::None)
                 },
             )
-            .width(200.0)
+            .width(200.0_f32)
             .resizable(true),
         ];
 

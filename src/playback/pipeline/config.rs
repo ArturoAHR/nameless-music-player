@@ -1,5 +1,5 @@
 use crate::{
-    playback::pipeline::{event::AudioPipelineEventEmitter, AudioFormat},
+    playback::pipeline::{AudioFormat, event::AudioPipelineEventEmitter},
     track::models::Track,
 };
 
