@@ -228,7 +228,7 @@ impl PlaybackController {
         let volume_percentage: f32 = From::<u8>::from(volume_percentage.min(100));
         let volume_percentage_ratio = 1.0 - volume_percentage / 100.0;
         let decibels = MINIMUM_VOLUME_DECIBELS * volume_percentage_ratio;
-        let volume_gain = 10.0f32.powf(decibels / 20.0);
+        let volume_gain = 10.0_f32.powf(decibels / 20.0);
 
         self.volume_gain
             .store(volume_gain.to_bits(), Ordering::Relaxed);
